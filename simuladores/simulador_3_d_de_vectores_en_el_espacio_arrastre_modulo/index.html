@@ -107,6 +107,7 @@
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
+    controls.target.set(0, 0, 0);
 
     function sizeRenderer(){
       const rect = container.getBoundingClientRect();
@@ -116,6 +117,31 @@
       camera.aspect = w/h; camera.updateProjectionMatrix();
     }
     window.addEventListener('resize', sizeRenderer);
+
+    function fitView(){
+      sizeRenderer();
+      const visibleObjects = [arrow, arrowProjX, arrowProjY, arrowProjZ, markX, markY, markZ, tip, arcAlpha, arcBeta, arcGamma]
+        .filter(obj => obj && obj.visible !== false);
+      const box = new THREE.Box3().setFromObject(axes);
+      visibleObjects.forEach(obj => box.expandByObject(obj));
+      if (!box.isEmpty()) {
+        box.expandByScalar(Math.max(3, magnitude * 0.25));
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const radius = Math.max(size.x, size.y, size.z, 12) * 0.62;
+        const distance = radius / Math.sin(THREE.MathUtils.degToRad(camera.fov * 0.5));
+        const viewDir = new THREE.Vector3(1, 0.75, 1.1).normalize();
+        camera.position.copy(center.clone().add(viewDir.multiplyScalar(distance)));
+        camera.near = Math.max(0.01, distance / 100);
+        camera.far = Math.max(1000, distance * 100);
+        camera.zoom = 1;
+        camera.updateProjectionMatrix();
+        controls.target.copy(center);
+        controls.update();
+      }
+    }
+    window.fitView = fitView;
+    window.addEventListener('simulator-fit-view', fitView);
 
     // Luces
     scene.add(new THREE.AmbientLight(0xffffff, 0.6));
@@ -432,6 +458,7 @@
     function init(){
       sizeRenderer();
       updateVector();
+      fitView();
       animate();
     }
     init();

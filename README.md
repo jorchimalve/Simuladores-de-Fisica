@@ -31,8 +31,8 @@ Repositorio de prácticas interactivas de física desarrolladas con HTML, CSS y 
 - Vectores en el espacio 3D
 - Máquina de Atwood
 - Gráfico de cajas y bigotes
-- Plano inclinado con masa colgante
-- MRU y MRUV con fotopuertas
+- Equilibrio en plano inclinado
+- MRU-MRUV
 - Conservación de la energía en pista
 - Movimiento parabólico
 - Hidrostática y manómetro en U

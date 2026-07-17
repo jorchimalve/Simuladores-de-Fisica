@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MRU y MRUV con fotopuertas</title>
+<title>MRU-MRUV</title>
 
   <meta name="description" content="Compara movimiento uniforme y acelerado mediante mediciones virtuales de posici&oacute;n y tiempo.">
 
@@ -13,7 +13,7 @@
 <body>
 <header class="sim-header">
   <div class="sim-title-group">
-    <h1>MRU y MRUV con fotopuertas</h1>
+    <h1>MRU-MRUV</h1>
     <p class="sim-subtitle">Compara movimiento uniforme y acelerado mediante mediciones virtuales de posici&oacute;n y tiempo.</p>
   </div>
   <label class="theme-toggle">
@@ -86,9 +86,10 @@
     </div>
 
     <div class="buttons">
-      <button id="btnArm" class="primary">Simular</button>
       <button id="btnFire" class="primary">Iniciar</button>
+      <button id="btnArm" class="primary">Simular</button>
       <button id="btnPause">Pausar</button>
+      <button id="btnContinue">Continuar</button>
       <button id="btnReset" class="danger">Reiniciar</button>
       <button id="btnFit" data-fit-view>Ajustar vista</button>
       <button id="btnCSV">Descargar CSV trayectoria</button>
@@ -127,7 +128,7 @@ const v0N = $('#v0Num'), aN = $('#aNum');
 const btnFit = $('#btnFit');
 const forceDir = $('#forceDir');
 const gateStr = $('#gateStr'), gateWidthN = $('#gateWidth');
-const btnArm = $('#btnArm'), btnFire = $('#btnFire'), btnPause = $('#btnPause'), btnReset = $('#btnReset');
+const btnArm = $('#btnArm'), btnFire = $('#btnFire'), btnPause = $('#btnPause'), btnContinue = $('#btnContinue'), btnReset = $('#btnReset');
 const btnCSV = $('#btnCSV'), btnCSVG = $('#btnCSVGates');
 const tOut = $('#tOut'), sOut = $('#sOut'), vOut = $('#vOut'), aOut = $('#aOut');
 const tableBody = document.querySelector('#gateTable tbody');
@@ -205,6 +206,7 @@ function recomputeAccel(){
 btnArm.addEventListener('click', ()=>{ state.armed=true; state.playing=false; resetToStart(); });
 btnFire.addEventListener('click', ()=>{ if(!state.armed){ btnArm.click(); } state.playing=true; lastTS=0; requestAnimationFrame(loop); });
 btnPause.addEventListener('click', ()=>{ state.playing=false; });
+btnContinue.addEventListener('click', ()=>{ if(!state.armed){ btnArm.click(); } state.playing=true; lastTS=0; requestAnimationFrame(loop); });
 btnReset.addEventListener('click', ()=>{ state.playing=false; state.armed=false; state.t=0; state.s=state.sStart; state.v=state.v0; state.path=[]; state.hits=[]; updateReadouts(); renderTable(); draw(); });
 
 btnCSV.addEventListener('click', ()=>{ if(!state.path.length) return; const rows=['t,s,v,a']; state.path.forEach(p=>rows.push(`${p.t.toFixed(4)},${p.s.toFixed(4)},${p.v.toFixed(4)},${p.a.toFixed(4)}`)); downloadCSV(rows.join('\n'),'mru_mruv_muestreo.csv'); });

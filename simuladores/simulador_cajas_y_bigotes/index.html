@@ -420,9 +420,29 @@
       const labelColor = dark ? '#f1f5f9' : '#111827';
       const secondaryLabel = dark ? '#cbd5e1' : '#374151';
 
-      let minVal = Math.min(stats.min, stats.lowerFence);
-      let maxVal = Math.max(stats.max, stats.upperFence);
-      const pad = (maxVal - minVal || 1) * 0.10;
+      const scaleValues = [
+        stats.lowWhisker,
+        stats.q1,
+        stats.median,
+        stats.q3,
+        stats.highWhisker
+      ];
+      if (showMean.checked) scaleValues.push(stats.mean);
+      if (showOutliers.checked && Array.isArray(stats.outliers)) {
+        scaleValues.push(...stats.outliers);
+      }
+      const finiteScaleValues = scaleValues.filter(Number.isFinite);
+      let minVal = finiteScaleValues.length ? Math.min(...finiteScaleValues) : 0;
+      let maxVal = finiteScaleValues.length ? Math.max(...finiteScaleValues) : 1;
+      if (!Number.isFinite(minVal) || !Number.isFinite(maxVal)) {
+        minVal = 0;
+        maxVal = 1;
+      }
+      if (minVal === maxVal) {
+        minVal -= 0.5;
+        maxVal += 0.5;
+      }
+      const pad = Math.max((maxVal - minVal) * 0.10, 0.5);
       minVal -= pad;
       maxVal += pad;
 

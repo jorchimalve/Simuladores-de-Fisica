@@ -303,10 +303,11 @@
       const tubeHeightPx = tubeBottom - tubeTop;
       const pxPerM = tubeHeightPx / state.maxTubeHeight;
 
-      const leftX = w * 0.40;
-      const rightX = w * 0.60;
-      const glassW = 74;
-      const fluidW = 48;
+      const leftX = w * 0.38;
+      const rightX = w * 0.62;
+      const tubeRadius = 22;
+      const tubeStroke = tubeRadius * 2;
+      const fluidStroke = Math.max(22, tubeStroke - 16);
 
       const yLeft = tubeBottom - state.hl * pxPerM;
       const yRight = tubeBottom - state.hr * pxPerM;
@@ -315,61 +316,55 @@
       const waveAmp = state.wave ? Math.min(2.0, Math.abs(state.hCapsTarget - state.hCaps) * 10 + 0.2) : 0;
       const wavePhase = state.time * 5;
 
-      function drawGlassTube(cx){
-        ctx.fillStyle = document.body.classList.contains('dark') ? 'rgba(255,255,255,0.08)' : 'rgba(37,99,235,0.06)';
-        drawRoundedRect(cx - glassW/2, tubeTop, glassW, tubeHeightPx, 24);
-        ctx.fill();
-
-        ctx.strokeStyle = document.body.classList.contains('dark') ? 'rgba(220,235,255,0.92)' : '#475569';
-        ctx.lineWidth = 3;
-        drawRoundedRect(cx - glassW/2, tubeTop, glassW, tubeHeightPx, 24);
-        ctx.stroke();
-      }
-
-      drawGlassTube(leftX);
-      drawGlassTube(rightX);
-
       const centerX = (leftX + rightX) / 2;
       const centerY = tubeBottom;
       const outerR = (rightX - leftX) / 2;
-      const innerR = outerR - 8;
+      const tubeColor = document.body.classList.contains('dark') ? 'rgba(226,232,240,0.92)' : '#475569';
+      const innerColor = document.body.classList.contains('dark') ? '#111827' : '#ffffff';
+      const liquidColor = document.body.classList.contains('dark') ? '#38bdf8' : '#0284c7';
 
-      ctx.strokeStyle = document.body.classList.contains('dark') ? 'rgba(220,235,255,0.92)' : '#475569';
-      ctx.lineWidth = 30;
+      function tubePath(){
+        ctx.beginPath();
+        ctx.moveTo(leftX, tubeTop);
+        ctx.lineTo(leftX, tubeBottom);
+        ctx.arc(centerX, centerY, outerR, Math.PI, 0, false);
+        ctx.lineTo(rightX, tubeTop);
+      }
+
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = tubeColor;
+      ctx.lineWidth = tubeStroke;
+      tubePath();
+      ctx.stroke();
+
+      ctx.strokeStyle = innerColor;
+      ctx.lineWidth = fluidStroke + 8;
+      tubePath();
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = liquidColor;
+      ctx.lineWidth = fluidStroke;
       ctx.lineCap = 'round';
       ctx.beginPath();
+      ctx.moveTo(leftX, yLeft);
+      ctx.lineTo(leftX, tubeBottom);
       ctx.arc(centerX, centerY, outerR, Math.PI, 0, false);
+      ctx.lineTo(rightX, yRight);
       ctx.stroke();
-
-      ctx.strokeStyle = document.body.classList.contains('dark') ? '#334155' : '#dbe3ee';
-      ctx.lineWidth = 16;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, innerR, Math.PI, 0, false);
-      ctx.stroke();
-
-      const liquidGrad = ctx.createLinearGradient(0, tubeTop, 0, tubeBottom);
-      liquidGrad.addColorStop(0, 'rgba(112,226,255,0.96)');
-      liquidGrad.addColorStop(1, 'rgba(42,166,209,0.99)');
-      ctx.fillStyle = liquidGrad;
-
-      drawRoundedRect(leftX - fluidW/2, yLeft, fluidW, tubeBottom - yLeft + 1, 10);
-      ctx.fill();
-      drawRoundedRect(rightX - fluidW/2, yRight, fluidW, tubeBottom - yRight + 1, 10);
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, innerR - 1, Math.PI, 0, false);
-      ctx.lineTo(rightX - fluidW/2, tubeBottom + 1);
-      ctx.lineTo(leftX + fluidW/2, tubeBottom + 1);
-      ctx.closePath();
-      ctx.fill();
+      ctx.restore();
 
       function drawMeniscus(x, y, sign){
         ctx.beginPath();
-        ctx.moveTo(x - fluidW/2 + 4, y + 1);
-        ctx.quadraticCurveTo(x, y + sign * waveAmp + Math.sin(wavePhase) * waveAmp * 0.2, x + fluidW/2 - 4, y + 1);
+        ctx.moveTo(x - fluidStroke/2 + 3, y);
+        ctx.quadraticCurveTo(x, y + sign * waveAmp + Math.sin(wavePhase) * waveAmp * 0.2, x + fluidStroke/2 - 3, y);
         ctx.lineWidth = 2.5;
-        ctx.strokeStyle = '#b6f2ff';
+        ctx.strokeStyle = document.body.classList.contains('dark') ? '#bae6fd' : '#7dd3fc';
         ctx.stroke();
       }
 

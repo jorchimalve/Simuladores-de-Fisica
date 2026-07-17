@@ -61,8 +61,6 @@
   <button data-fit-view>Ajustar vista</button>
 </div>
 
-      <p style="margin-top:10px">Estado: <span id="status" class="badge">-</span></p>
-
       <div class="stats grid-3">
         <div class="card"><span>Condici&oacute;n de equilibrio</span><strong id="eqCond">m&middot;g &asymp; M&middot;g&middot;sin&theta;</strong></div>
         <div class="card"><span>Resultado num&eacute;rico</span><strong id="eqNums">-</strong></div>
@@ -89,7 +87,6 @@
     const gR=$('#gRange'), gN=$('#gNum');
     const btnEval=$('#btnEval'), btnPlay=$('#btnPlay'), btnReset=$('#btnReset');
 
-    const status=$('#status');
     const eqCond=$('#eqCond');
     const eqNums=$('#eqNums');
     const aOut=$('#aOut');
@@ -139,9 +136,6 @@
       state.a=a;
       aOut.textContent = a.toFixed(3);
       eqNums.textContent = `${(m*g).toFixed(2)} vs ${(M*g*Math.sin(th)).toFixed(2)}`;
-      if(Math.abs(m - Msintheta) < 1e-4){ status.textContent='Equilibrio'; status.style.color='#6ee7a8'; }
-      else if(m>Msintheta){ status.textContent='Se mueve a la DERECHA (carro sube)'; status.style.color='#9fd0ff'; }
-      else { status.textContent='Se mueve a la IZQUIERDA (carro baja)'; status.style.color='#fca5a5'; }
     }
 
     // Animaci&oacute;n simple para ilustrar direcci&oacute;n

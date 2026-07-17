@@ -18,13 +18,13 @@ $Simulators = @{
     Desc = 'Interpreta mediana, cuartiles, dispersi&oacute;n y valores at&iacute;picos en datos experimentales.'
     Area = 'Estad&iacute;stica'
   }
-  'simulador_carrito_en_plano_inclinado_con_masa_colgante_equilibrio' = @{
+  'simulador_equilibrio_en_plano_inclinado' = @{
     Title = 'Equilibrio en plano inclinado'
     Desc = 'Relaciona tensi&oacute;n, peso y componentes de fuerza en un carrito con masa colgante.'
     Area = 'Equilibrio'
   }
-  'simulador_conservacion_de_la_energia_en_pista' = @{
-    Title = 'MRU y MRUV con fotopuertas'
+  'simulador_mru_mruv' = @{
+    Title = 'MRU-MRUV'
     Desc = 'Compara movimiento uniforme y acelerado mediante mediciones virtuales de posici&oacute;n y tiempo.'
     Area = 'Cinem&aacute;tica'
   }

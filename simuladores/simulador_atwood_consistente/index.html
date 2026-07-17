@@ -114,7 +114,6 @@
       <div class="card"><span>Estado</span><strong id="stateOut">-</strong></div>
     </div>
 
-    <div id="badge" class="badge eq">Equilibrio</div>
     <p class="switch" style="margin-top:10px">
       <small style="color:var(--muted)">Suposiciones: cuerda inextensible y sin masa, polea ideal (sin rozamiento). El movimiento se detiene visualmente al llegar a topes.</small>
     </p>
@@ -154,8 +153,6 @@
   const stopRefSelect = $('#stopRefSelect');
 
   const aOut = $('#aOut'), tOut = $('#tOut'), timeOut = $('#timeOut'), stateOut = $('#stateOut');
-  const badge = $('#badge');
-
   const btnPlay = $('#btnPlay'), btnPause = $('#btnPause'), btnReset = $('#btnReset');
   const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 
@@ -232,9 +229,7 @@
     }
     aOut.textContent = Math.abs(s.a).toFixed(3);
     tOut.textContent = s.T.toFixed(2);
-      stateOut.textContent = s.dir==='eq' ? 'Equilibrio' : (s.dir==='right' ? 'Derecha' : 'Izquierda');
-      badge.className = 'badge ' + (s.dir==='eq' ? 'eq' : (s.dir==='right' ? 'right' : 'left'));
-    badge.textContent = s.dir==='eq' ? 'Equilibrio' : (s.dir==='right' ? 'Derecha (baja A)' : 'Izquierda (baja B)');
+    stateOut.textContent = s.dir==='eq' ? 'Equilibrio' : (s.dir==='right' ? 'Derecha' : 'Izquierda');
   }
 
   // ------- dibujo -------
