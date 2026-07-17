@@ -299,8 +299,9 @@
       ctx.fillRect(0,0,w,h);
 
       const tubeTop = 70;
-      const tubeBottom = h - 120;
-      const tubeHeightPx = tubeBottom - tubeTop;
+      const curveStartY = h - 190;
+      const tubeBottom = h - 96;
+      const tubeHeightPx = curveStartY - tubeTop;
       const pxPerM = tubeHeightPx / state.maxTubeHeight;
 
       const leftX = w * 0.38;
@@ -309,16 +310,15 @@
       const tubeStroke = tubeRadius * 2;
       const fluidStroke = Math.max(22, tubeStroke - 16);
 
-      const yLeft = tubeBottom - state.hl * pxPerM;
-      const yRight = tubeBottom - state.hr * pxPerM;
-      const refY = tubeBottom - state.h0 * pxPerM;
+      const yLeft = curveStartY - state.hl * pxPerM;
+      const yRight = curveStartY - state.hr * pxPerM;
+      const refY = curveStartY - state.h0 * pxPerM;
 
       const waveAmp = state.wave ? Math.min(2.0, Math.abs(state.hCapsTarget - state.hCaps) * 10 + 0.2) : 0;
       const wavePhase = state.time * 5;
 
       const centerX = (leftX + rightX) / 2;
-      const centerY = tubeBottom;
-      const outerR = (rightX - leftX) / 2;
+      const curveControl = (rightX - leftX) * 0.34;
       const tubeColor = document.body.classList.contains('dark') ? 'rgba(226,232,240,0.92)' : '#475569';
       const innerColor = document.body.classList.contains('dark') ? '#111827' : '#ffffff';
       const liquidColor = document.body.classList.contains('dark') ? '#38bdf8' : '#0284c7';
@@ -326,8 +326,9 @@
       function tubePath(){
         ctx.beginPath();
         ctx.moveTo(leftX, tubeTop);
-        ctx.lineTo(leftX, tubeBottom);
-        ctx.arc(centerX, centerY, outerR, Math.PI, 0, false);
+        ctx.lineTo(leftX, curveStartY);
+        ctx.bezierCurveTo(leftX, tubeBottom, centerX - curveControl, tubeBottom, centerX, tubeBottom);
+        ctx.bezierCurveTo(centerX + curveControl, tubeBottom, rightX, tubeBottom, rightX, curveStartY);
         ctx.lineTo(rightX, tubeTop);
       }
 
@@ -350,11 +351,11 @@
       ctx.lineJoin = 'round';
       ctx.strokeStyle = liquidColor;
       ctx.lineWidth = fluidStroke;
-      ctx.lineCap = 'round';
       ctx.beginPath();
       ctx.moveTo(leftX, yLeft);
-      ctx.lineTo(leftX, tubeBottom);
-      ctx.arc(centerX, centerY, outerR, Math.PI, 0, false);
+      ctx.lineTo(leftX, curveStartY);
+      ctx.bezierCurveTo(leftX, tubeBottom, centerX - curveControl, tubeBottom, centerX, tubeBottom);
+      ctx.bezierCurveTo(centerX + curveControl, tubeBottom, rightX, tubeBottom, rightX, curveStartY);
       ctx.lineTo(rightX, yRight);
       ctx.stroke();
       ctx.restore();
@@ -383,7 +384,7 @@
       ctx.font = '12px Arial';
       ctx.fillText('h0', Math.min(rightX + 94, w - 24), refY + 4);
 
-      const midX = (leftX + rightX) / 2;
+      const midX = rightX + 62;
       ctx.strokeStyle = '#f72585';
       ctx.fillStyle = '#f72585';
       ctx.lineWidth = 2;

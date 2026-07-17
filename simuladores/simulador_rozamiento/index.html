@@ -55,8 +55,14 @@
 
       <div class="row">
         <label for="FApRange">Fuerza aplicada F (N)</label>
-        <input id="FApRange" type="range" min="0" max="500" step="0.01" value="50.00" />
-        <input id="FApNum" class="num" type="number" min="0" max="500" step="0.01" value="50.00" />
+        <input id="FApRange" type="range" min="-500" max="500" step="0.01" value="50.00" />
+        <input id="FApNum" class="num" type="number" min="-500" max="500" step="0.01" value="50.00" />
+      </div>
+
+      <div class="row">
+        <label for="v0Range">Velocidad inicial v<sub>0</sub> (m/s)</label>
+        <input id="v0Range" type="range" min="-10" max="10" step="0.01" value="0.00" />
+        <input id="v0Num" class="num" type="number" min="-10" max="10" step="0.01" value="0.00" />
       </div>
 
       <div class="buttons">
@@ -68,6 +74,7 @@
       </div>
 
       <div id="status">Estado: -</div>
+      <p id="frictionWarning" class="hint"></p>
 
       <div class="row">
         <label for="timeRange">Tiempo (s) - desliza para inspeccionar</label>
@@ -109,6 +116,12 @@
         <div class="card"><span>x (m)</span><strong id="xOut">0.000</strong></div>
         <div class="card"><span>v (m/s)</span><strong id="vOut">0.000</strong></div>
         <div class="card"><span>t (s)</span><strong id="tOut">0.000</strong></div>
+        <div class="card"><span>F aplicada (N)</span><strong id="forceOut">0.000</strong></div>
+        <div class="card"><span>F<sub>f</sub> actual (N)</span><strong id="fricOut">0.000</strong></div>
+        <div class="card"><span>F neta (N)</span><strong id="netOut">0.000</strong></div>
+        <div class="card"><span>N (N)</span><strong id="normalOut">0.000</strong></div>
+        <div class="card"><span>F<sub>s,max</sub> (N)</span><strong id="fsMaxOut">0.000</strong></div>
+        <div class="card"><span>a (m/s&sup2;)</span><strong id="accOut">0.000</strong></div>
       </div>
 
       <p class="sub">Criterio: si F &le; &mu;<sub>s</sub>N, no hay movimiento. Si F &gt; &mu;<sub>s</sub>N, act&uacute;a la fricci&oacute;n cin&eacute;tica &mu;<sub>k</sub>N.</p>
@@ -131,14 +144,18 @@
     const muSR=$('#muSRange'), muSN=$('#muSNum');
     const muKR=$('#muKRange'), muKN=$('#muKNum');
     const FR=$('#FApRange'), FN=$('#FApNum');
+    const v0R=$('#v0Range'), v0N=$('#v0Num');
 
   const btnSim=$('#btnSim'), btnPause=$('#btnPause'), btnReset=$('#btnReset'), btnCSV=$('#btnCSV'), btnFit=$('#btnFit');
     const btnCheck=$('#btnCheck'), btnClear=$('#btnClear');
 
     const statusEl=$('#status');
+    const warningEl=$('#frictionWarning');
 
     const timeR=$('#timeRange'), timeN=$('#timeNum');
     const xOut=$('#xOut'), vOut=$('#vOut'), tOut=$('#tOut');
+    const forceOut=$('#forceOut'), fricOut=$('#fricOut'), netOut=$('#netOut');
+    const normalOut=$('#normalOut'), fsMaxOut=$('#fsMaxOut'), accOut=$('#accOut');
 
     // Entradas estudiante
     const nIn=$('#nIn'), fsIn=$('#fsIn'), ffIn=$('#ffIn'), aIn=$('#aIn');
@@ -148,18 +165,19 @@
     let w,h, pxPerM=50; const margin={l:64,r:30,t:28,b:60};
 
     const state={
-      m:5, g:9.8, muS:0.4, muK:0.3, F:50,
+      m:5, g:9.8, muS:0.4, muK:0.3, F:50, v0:0,
       playing:false, t:0, dt:0.01, autoAxes:true,
       xRange:20, endTime:10, reachedLimit:false,
-      mode:'idle', // 'static' | 'kinetic' | 'idle'
-      a:0, N:0, FsMax:0, Ff:0,
+      x:0, v:0, moving:false,
+      mode:'idle', // 'static' | 'kinetic' | 'stopped' | 'limit' | 'idle'
+      a:0, N:0, FsMax:0, Fk:0, Ff:0, Fnet:0,
       path:[] // {t,x,v,a,Ff}
     };
 
     function syncIO(range,num,setter){
       const update=(val)=>{
         const v = parseFloat(val);
-        if (isFinite(v)) { setter(+v.toFixed(6)); range.value=v; num.value=v; compute(); draw(); }
+        if (isFinite(v)) { setter(+v.toFixed(6)); range.value=v; num.value=v; updateForcesAtRest(); draw(); }
       };
       range.addEventListener('input',e=>update(e.target.value));
       num.addEventListener('input',e=>update(e.target.value));
@@ -169,7 +187,8 @@
     syncIO(muSR,muSN,v=>state.muS=v);
     syncIO(muKR,muKN,v=>state.muK=v);
     syncIO(FR,FN,v=>state.F=v);
-  btnFit.addEventListener('click', ()=>{ state.autoAxes=true; compute(); resize(); draw(); });
+    syncIO(v0R,v0N,v=>state.v0=v);
+  btnFit.addEventListener('click', ()=>{ state.autoAxes=true; updateForcesAtRest(); resize(); draw(); });
 
     function resize(){
       const rect=cv.getBoundingClientRect();
@@ -178,14 +197,21 @@
       const dpr=window.devicePixelRatio||1;
       cv.width=Math.floor(w*dpr); cv.height=Math.floor(h*dpr);
       ctx.setTransform(dpr,0,0,dpr,0,0);
-      compute(); draw();
+      updateDerived(); draw();
     }
     window.addEventListener('resize', resize);
 
     function syncTime(val){
-      const t = Math.min(state.endTime, Math.max(0, parseFloat(val) || 0));
+      const maxT = state.path.length ? state.path[state.path.length - 1].t : state.endTime;
+      const t = Math.min(maxT, Math.max(0, parseFloat(val) || 0));
       state.t=t;
-      state.reachedLimit = state.endTime < 10 && state.t >= state.endTime - 1e-9;
+      const s = sampleAt(t);
+      state.x = s.x;
+      state.v = s.v;
+      state.a = s.a;
+      state.Ff = s.Ff;
+      state.Fnet = s.Fnet || 0;
+      state.reachedLimit = Math.abs(state.x) >= state.xRange - 1e-9;
       timeR.value=t; timeN.value=t.toFixed(3);
       state.playing=false; btnSim.textContent='Reanudar';
       draw();
@@ -194,63 +220,166 @@
     timeN.addEventListener('input', e=>syncTime(e.target.value));
 
     // F&iacute;sica
-    function compute(){
-      const {m,g,muS,muK,F}=state;
-      const N=m*g;
-      const FsMax=muS*N;
-      let mode, Ff, a;
+    const EPS = 1e-7;
 
-      if (F <= FsMax){
-        mode='static';
-        Ff = F;   // fricci&oacute;n iguala y se opone
-        a = 0;
+    function updateScale(){
+      const scaleX = (w - margin.l - margin.r - 50) / Math.max(1, state.xRange * 2);
+      const scaleY = (h - margin.t - margin.b) / 4;
+      pxPerM = Math.max(6, Math.min(scaleX, scaleY));
+    }
+
+    function updateDerived(){
+      state.N = state.m * state.g;
+      state.FsMax = state.muS * state.N;
+      state.Fk = state.muK * state.N;
+      warningEl.textContent = state.muK > state.muS
+        ? 'Advertencia: normalmente \u03bcs es mayor o igual que \u03bck.'
+        : '';
+      updateScale();
+    }
+
+    function updateForcesAtRest(){
+      updateDerived();
+      state.t = Math.max(0, state.t || 0);
+      state.v = 0;
+      state.Ff = Math.abs(state.F) <= state.FsMax ? -state.F : 0;
+      state.Fnet = Math.abs(state.F) <= state.FsMax ? 0 : state.F;
+      state.a = 0;
+      state.mode = Math.abs(state.F) <= state.FsMax ? 'static' : 'stopped';
+      state.moving = false;
+      state.endTime = 10;
+      timeR.max = state.endTime;
+      timeN.max = state.endTime;
+      timeR.value = state.t;
+      timeN.value = state.t.toFixed(3);
+    }
+
+    function kineticForces(velocity, preferredDirection = 0){
+      updateDerived();
+      const dir = Math.sign(velocity) || Math.sign(preferredDirection) || Math.sign(state.F) || 1;
+      const Ff = -dir * state.Fk;
+      const Fnet = state.F + Ff;
+      return {Ff, Fnet, a:Fnet/state.m, dir};
+    }
+
+    function evaluateStaticAfterStop(){
+      if (Math.abs(state.F) <= state.FsMax) {
+        state.v = 0;
+        state.a = 0;
+        state.Ff = -state.F;
+        state.Fnet = 0;
+        state.moving = false;
+        state.mode = 'static';
+        return false;
+      }
+      const k = kineticForces(0, state.F);
+      state.Ff = k.Ff;
+      state.Fnet = k.Fnet;
+      state.a = k.a;
+      if (Math.sign(k.a) === Math.sign(state.F) && Math.abs(k.a) > EPS) {
+        state.moving = true;
+        state.mode = 'kinetic';
+        return true;
+      }
+      state.v = 0;
+      state.a = 0;
+      state.Fnet = 0;
+      state.moving = false;
+      state.mode = 'stopped';
+      return false;
+    }
+
+    function resetRun(){
+      updateDerived();
+      state.t = 0;
+      state.x = 0;
+      state.v = state.v0;
+      state.path = [];
+      state.reachedLimit = false;
+      state.endTime = 10;
+      timeR.max = 10;
+      timeN.max = 10;
+      if (Math.abs(state.v) > EPS) {
+        const k = kineticForces(state.v);
+        state.Ff = k.Ff;
+        state.Fnet = k.Fnet;
+        state.a = k.a;
+        state.moving = true;
+        state.mode = 'kinetic';
       } else {
-        mode='kinetic';
-        Ff = muK * N;
-        a = (F - Ff)/m;
-        if (a <= 0) {
-          a = 0;
+        evaluateStaticAfterStop();
+      }
+      recordPoint();
+      timeR.value = 0;
+      timeN.value = '0.000';
+    }
+
+    function recordPoint(){
+      state.path.push({
+        t: state.t,
+        x: state.x,
+        v: state.v,
+        a: state.a,
+        Ff: state.Ff,
+        Fnet: state.Fnet
+      });
+    }
+
+    function stepPhysics(dt){
+      updateDerived();
+
+      if (!state.moving && Math.abs(state.v) < EPS) {
+        if (!evaluateStaticAfterStop()) {
+          recordPoint();
+          return;
         }
       }
 
-      state.mode=mode; state.N=N; state.FsMax=FsMax; state.Ff=Ff; state.a=a;
+      const prevV = state.v;
+      const prevX = state.x;
+      const k = kineticForces(state.v, state.F);
+      state.Ff = k.Ff;
+      state.Fnet = k.Fnet;
+      state.a = k.a;
+      state.mode = 'kinetic';
 
-      // trayectoria t en [0,10] con x0=0, v0=0.
-      // Si la fuerza neta no mantiene el avance, el bloque permanece detenido;
-      // el rozamiento no puede invertir por si solo el sentido del movimiento.
-      const T = 10, dt = 0.01;
-      state.path = [];
-      for(let t=0;t<=T+1e-9;t+=dt){
-        const x = (mode==='kinetic') ? 0.5*a*t*t : 0;
-        const v = (mode==='kinetic') ? a*t : 0;
-        state.path.push({t,x,v,a,Ff});
-      }
+      let nextV = state.v + state.a * dt;
+      let nextX = state.x + state.v * dt + 0.5 * state.a * dt * dt;
+      const signChanged = Math.abs(prevV) > EPS && Math.sign(prevV) !== Math.sign(nextV);
 
-      const limitTime = mode === 'kinetic' && a > 0
-        ? Math.sqrt((2 * state.xRange) / a)
-        : 0;
-      state.endTime = Math.min(T, limitTime);
-      state.reachedLimit = state.endTime < T && state.t >= state.endTime - 1e-9;
-
-      timeR.max = state.endTime; timeN.max=state.endTime;
-      if (state.t>state.endTime){ state.t=state.endTime; }
-      timeR.value=state.t; timeN.value=state.t.toFixed(3);
-
-      // ejes
-      let xMaxM = 1;
-      if (state.autoAxes){
-        xMaxM = Math.max(1, state.xRange);
+      if (signChanged) {
+        const stopDt = Math.max(0, Math.min(dt, -prevV / state.a));
+        state.x = prevX + prevV * stopDt + 0.5 * state.a * stopDt * stopDt;
+        state.v = 0;
+        state.t += stopDt;
+        evaluateStaticAfterStop();
       } else {
-        xMaxM = Math.max(1, state.xRange);
+        state.v = Math.abs(nextV) < EPS ? 0 : nextV;
+        state.x = nextX;
+        state.t += dt;
+        if (Math.abs(state.v) < EPS) {
+          evaluateStaticAfterStop();
+        }
       }
-      const scaleX = (w - margin.l - margin.r - 50)/xMaxM;
-      const scaleY = (h - margin.t - margin.b)/4; // 4 m de alto para dibujo
-      pxPerM = Math.max(6, Math.min(scaleX, scaleY));
+
+      if (Math.abs(state.x) >= state.xRange) {
+        state.x = Math.sign(state.x || state.v || state.F || 1) * state.xRange;
+        state.v = 0;
+        state.a = 0;
+        state.Fnet = 0;
+        state.moving = false;
+        state.mode = 'limit';
+        state.reachedLimit = true;
+        state.playing = false;
+      }
+      recordPoint();
+      timeR.max = Math.max(10, state.t);
+      timeN.max = timeR.max;
     }
 
     function sampleAt(t){
       const path=state.path;
-      if (!path.length) return {t:0,x:0,v:0,a:0,Ff:0};
+      if (!path.length) return {t:state.t,x:state.x,v:state.v,a:state.a,Ff:state.Ff,Fnet:state.Fnet};
       if (t<=path[0].t) return path[0];
       if (t>=path[path.length-1].t) return path[path.length-1];
       let lo=0, hi=path.length-1;
@@ -264,12 +393,13 @@
         x:a.x+f*(b.x-a.x),
         v:a.v+f*(b.v-a.v),
         a:a.a+f*(b.a-a.a),
-        Ff:a.Ff+f*(b.Ff-a.Ff)
+        Ff:a.Ff+f*(b.Ff-a.Ff),
+        Fnet:(a.Fnet||0)+f*((b.Fnet||0)-(a.Fnet||0))
       };
     }
 
     function worldToCanvas(pt){
-      const cx = margin.l + pt.x*pxPerM;
+      const cx = margin.l + (pt.x + state.xRange)*pxPerM;
       const cy = h - margin.b - pt.y*pxPerM;
       return {x:cx, y:cy};
     }
@@ -297,8 +427,9 @@
       ctx.strokeStyle = document.body.classList.contains('dark') ? '#64748b' : '#475569';
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(margin.l, h - margin.b);
+      const leftLimitPoint = worldToCanvas({x:-state.xRange,y:0});
       const limitPoint = worldToCanvas({x:state.xRange,y:0});
+      ctx.moveTo(leftLimitPoint.x, h - margin.b);
       ctx.lineTo(limitPoint.x, h - margin.b);
       ctx.stroke();
 
@@ -307,10 +438,12 @@
       ctx.fillStyle = document.body.classList.contains('dark') ? '#fca5a5' : '#7f1d1d';
       ctx.lineWidth = 2;
       ctx.setLineDash([6,5]);
-      ctx.beginPath();
-      ctx.moveTo(limitPoint.x, margin.t);
-      ctx.lineTo(limitPoint.x, h - margin.b + 8);
-      ctx.stroke();
+      [leftLimitPoint, limitPoint].forEach(p=>{
+        ctx.beginPath();
+        ctx.moveTo(p.x, margin.t);
+        ctx.lineTo(p.x, h - margin.b + 8);
+        ctx.stroke();
+      });
       ctx.setLineDash([]);
       ctx.font='bold 12px Arial';
       ctx.textAlign='right';
@@ -322,8 +455,8 @@
       ctx.fillStyle=document.body.classList.contains('dark') ? '#cbd5e1' : '#475569';
       ctx.font='12px Arial';
       const xMaxM = state.xRange;
-      const step = niceStep(xMaxM/8);
-      for (let x=0; x<=xMaxM+1e-6; x+=step){
+      const step = niceStep((xMaxM*2)/8);
+      for (let x=-xMaxM; x<=xMaxM+1e-6; x+=step){
         const p=worldToCanvas({x,y:0});
         ctx.beginPath();
         ctx.moveTo(p.x, h - margin.b - 4);
@@ -342,7 +475,7 @@
       const groundY=0;
       const t=state.t;
       const sample=sampleAt(t);
-      const s=state.reachedLimit ? {...sample,x:state.xRange} : sample;
+      const s=state.reachedLimit ? {...sample,x:Math.sign(sample.x || state.x || 1)*state.xRange,v:0,a:0,Fnet:0} : sample;
       const bx = s.x; // m
       const by = 0.5; // m por est&aacute;tica (altura del bloque)
       const blockW=1.2, blockH=0.6;
@@ -356,7 +489,7 @@
       ctx.setLineDash([8,6]);
       ctx.beginPath();
       const yGuide = worldToCanvas({x:0, y:by-bh/pxPerM/2}).y;
-      ctx.moveTo(margin.l, yGuide);
+      ctx.moveTo(worldToCanvas({x:-state.xRange,y:0}).x, yGuide);
       ctx.lineTo(worldToCanvas({x:state.xRange,y:0}).x, yGuide);
       ctx.stroke();
       ctx.setLineDash([]);
@@ -377,23 +510,25 @@
       const leftEdge = 8;
       const topEdge = margin.t + 8;
       const bottomEdge = h - margin.b - 8;
-      drawArrow(c.x, bypx+bh/2, Math.min(rightEdge, c.x + (state.F/50)*pxPerM), bypx+bh/2, document.body.classList.contains('dark') ? '#3b82f6' : '#1d4ed8');
-      const FfDir = -1; // opone a F (a la izquierda)
-      drawArrow(c.x, bypx+bh/2, Math.max(leftEdge, c.x + FfDir*(state.Ff/50)*pxPerM), bypx+bh/2, document.body.classList.contains('dark') ? '#8b5cf6' : '#7c3aed');
+      const clampX = (x)=>Math.max(leftEdge, Math.min(rightEdge, x));
+      drawArrow(c.x, bypx+bh/2, clampX(c.x + (state.F/50)*pxPerM), bypx+bh/2, document.body.classList.contains('dark') ? '#3b82f6' : '#1d4ed8');
+      drawArrow(c.x, bypx+bh/2, clampX(c.x + (state.Ff/50)*pxPerM), bypx+bh/2, document.body.classList.contains('dark') ? '#8b5cf6' : '#7c3aed');
 
       // N (arriba) y W (abajo)
       drawArrow(c.x, bypx+bh/2, c.x, Math.max(topEdge, bypx - (state.N/400)*pxPerM), '#16a34a');
       drawArrow(c.x, bypx+bh/2, c.x, Math.min(bottomEdge, bypx + (state.N/400)*pxPerM), '#ea580c');
 
       // estado UI
-      if (state.reachedLimit){
-        statusEl.textContent = `Estado final: l\u00edmite visual de ${state.xRange.toFixed(0)} m alcanzado.`;
+      if (state.mode==='limit'){
+        statusEl.textContent = 'Fin del recorrido';
       } else if (state.mode==='static'){
-        statusEl.textContent = `Estado: sin movimiento - rozamiento est\u00e1tico (F \u2264 \u03bcsN).`;
-      } else if (state.mode==='kinetic' && state.a <= 0){
-        statusEl.textContent = `Estado final: el bloque permanece en reposo; el rozamiento no invierte el movimiento.`;
+        statusEl.textContent = 'Reposo por fricci\u00f3n est\u00e1tica';
+      } else if (state.mode==='stopped'){
+        statusEl.textContent = 'Detenido';
+      } else if (state.mode==='kinetic' && state.v < -EPS){
+        statusEl.textContent = 'Movimiento hacia la izquierda';
       } else if (state.mode==='kinetic'){
-        statusEl.textContent = `Estado: en movimiento - rozamiento cin\u00e9tico (F > \u03bcsN).`;
+        statusEl.textContent = 'Movimiento hacia la derecha';
       } else {
         statusEl.textContent = 'Estado: -';
       }
@@ -402,9 +537,16 @@
       xOut.textContent = s.x.toFixed(3);
       vOut.textContent = s.v.toFixed(3);
       tOut.textContent = state.t.toFixed(3);
+      forceOut.textContent = state.F.toFixed(3);
+      fricOut.textContent = state.Ff.toFixed(3);
+      netOut.textContent = state.Fnet.toFixed(3);
+      normalOut.textContent = state.N.toFixed(3);
+      fsMaxOut.textContent = state.FsMax.toFixed(3);
+      accOut.textContent = state.a.toFixed(3);
     }
 
     function drawArrow(x1,y1,x2,y2,color){
+      if (Math.hypot(x2-x1, y2-y1) < 1) return;
       ctx.save();
       ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=2.5;
       ctx.beginPath();
@@ -427,21 +569,16 @@
     function loop(ts){
       if (!state.playing){ draw(); return; }
       if (!lastTS) lastTS=ts;
-      const dt=(ts-lastTS)/1000;
+      const dt=Math.min(0.03, (ts-lastTS)/1000);
       lastTS=ts;
-      state.t += dt;
-      const Tmax = state.endTime;
-      if (state.t>=Tmax){ state.t=Tmax; state.playing=false; btnSim.textContent='Simular'; }
-      const sNow = sampleAt(state.t);
-      if (state.mode === 'kinetic' && sNow.v <= 0 && state.t > 0) {
-        state.t = Math.max(0, state.t);
-        state.playing = false;
-        btnSim.textContent = 'Simular';
+      stepPhysics(dt);
+      if (state.mode === 'static' || state.mode === 'stopped' || state.mode === 'limit' || state.t >= 10) {
+        state.playing=false;
+        btnSim.textContent='Simular';
       }
-      state.reachedLimit = state.endTime < 10 && state.t >= state.endTime - 1e-9;
       timeR.value=state.t; timeN.value=state.t.toFixed(3);
       draw();
-      requestAnimationFrame(loop);
+      if (state.playing) requestAnimationFrame(loop);
     }
 
     // CSV
@@ -466,16 +603,21 @@
 
     // Controles
     btnSim.addEventListener('click', ()=>{
-      compute();
-      state.t=0; state.reachedLimit=false; timeR.value=0; timeN.value=0;
-      state.playing=true; lastTS=0; btnSim.textContent='Reanudar';
-      requestAnimationFrame(loop);
+      resetRun();
+      state.playing = state.mode === 'kinetic';
+      lastTS=0;
+      btnSim.textContent='Reanudar';
+      draw();
+      if (state.playing) requestAnimationFrame(loop);
     });
     btnPause.addEventListener('click', ()=>{ state.playing=false; btnSim.textContent='Reanudar'; draw(); });
-    btnReset.addEventListener('click', ()=>{ state.playing=false; state.t=0; state.reachedLimit=false; lastTS=0; btnSim.textContent='Simular'; compute(); draw(); clearChecks(); });
+    btnReset.addEventListener('click', ()=>{ state.playing=false; state.t=0; state.x=0; state.v=0; state.path=[]; state.reachedLimit=false; lastTS=0; btnSim.textContent='Simular'; updateForcesAtRest(); draw(); clearChecks(); });
 
     [mR,mN,gR,gN,muSR,muSN,muKR,muKN,FR,FN].forEach(el=>{
-      el.addEventListener('input', ()=>{ state.t=0; state.reachedLimit=false; state.playing=false; btnSim.textContent='Simular'; compute(); draw(); clearChecks(); });
+      el.addEventListener('input', ()=>{ state.playing=false; btnSim.textContent='Simular'; updateForcesAtRest(); draw(); clearChecks(); });
+    });
+    [v0R,v0N].forEach(el=>{
+      el.addEventListener('input', ()=>{ state.playing=false; btnSim.textContent='Simular'; updateForcesAtRest(); draw(); clearChecks(); });
     });
 
     // Verificaci&oacute;n
@@ -498,8 +640,8 @@
     btnCheck.addEventListener('click', ()=>{
       const N = state.m * state.g;
       const FsMax = state.muS * N;
-      const Ff = (state.F <= FsMax) ? state.F : state.muK * N;
-      const a = (state.F <= FsMax) ? 0 : Math.max(0, (state.F - state.muK * N)/state.m);
+      const Ff = state.Ff;
+      const a = state.a;
 
       const vn = parseFloat(nIn.value);
       const vfs = parseFloat(fsIn.value);
@@ -508,11 +650,12 @@
 
       setCheck(nCheck, isFinite(vn)  && approxEq(vn, N), N);
       setCheck(fsCheck, isFinite(vfs) && approxEq(vfs, FsMax), FsMax);
-      setCheck(ffCheck, isFinite(vff) && approxEq(Math.abs(vff), Math.abs(Ff)), Ff);
+      setCheck(ffCheck, isFinite(vff) && approxEq(vff, Ff), Ff);
       setCheck(aCheck, isFinite(va)  && approxEq(va, a), a);
     });
 
     // Init
+    updateForcesAtRest();
     resize();
   </script>
 
