@@ -1,0 +1,142 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Lentes &oacute;pticas delgadas</title>  <meta name="description" content="Visualiza rayos, foco e imagen para sistemas de una o varias lentes delgadas.">
+
+  
+  <link rel="stylesheet" href="../../assets/css/simulator-base.css">
+</head><body>
+<header class="sim-header">
+  <div class="sim-title-group">
+    <h1>Lentes &oacute;pticas delgadas</h1>
+    <p class="sim-subtitle">Visualiza rayos, foco e imagen para sistemas de una o varias lentes delgadas.</p>
+  </div>
+  <label class="theme-toggle">
+    <span>Modo oscuro</span>
+    <input type="checkbox" id="themeSwitch">
+  </label>
+</header>
+
+<main><section class="panel controls" aria-label="Controles del simulador">
+<h3>Controles</h3>
+<label>Distancia objeto-lente 1, do1 [mm]</label><div class="row"><input id="objectDistance" type="range" min="20" max="450" value="180"><input id="objectDistanceNum" type="number" min="20" max="450" value="180"></div>
+<label>Altura del objeto, ho [mm]</label><div class="row"><input id="objectHeight" type="range" min="5" max="100" value="45"><input id="objectHeightNum" type="number" min="5" max="100" value="45"></div>
+
+<label>Tama&ntilde;o del &aacute;rea visible del eje &oacute;ptico</label>
+<div class="row">
+<input id="axisSize" type="range" min="500" max="3000" step="100" value="500">
+<input id="axisSizeNum" type="number" min="500" max="3000" step="100" value="500">
+</div>
+
+<label>Zoom manual</label><div class="row"><input id="zoom" type="range" min="0.5" max="6.0" step="0.1" value="2"><input id="zoomNum" type="number" min="0.5" max="6.0" step="0.1" value="2"></div>
+<label>N&uacute;mero de lentes</label><select id="lensCount"><option value="1">1 lente</option><option value="2">2 lentes</option><option value="3">3 lentes</option></select>
+<div id="lensControls"></div>
+<div class="buttons">
+<button onclick="resetSystem()" class="danger">Reiniciar</button>
+<button onclick="autoFit()">Ajustar vista</button>
+<button class="secondary" onclick="saveImage()">Exportar PNG</button>
+</div>
+<div class="cards"><div class="card"><span>Resultados del sistema</span><strong id="results">-</strong></div></div><div class="info"><b>Regla:</b> los rayos &oacute;pticos se muestran entrecortados. Puede ampliar din&aacute;micamente el eje &oacute;ptico para visualizar trayectorias extensas o im&aacute;genes lejanas. Si la imagen tiende al infinito, los rayos se prolongan hasta el borde y se indica en resultados.</div>
+</section><section><canvas id="canvas" width="1500" height="760"></canvas></section></main>
+<script>
+const canvas=document.getElementById("canvas"),ctx=canvas.getContext("2d");
+let AXIS_LIMIT=500;
+function AXIS_MIN(){return -AXIS_LIMIT}
+function AXIS_MAX(){return AXIS_LIMIT}
+const state={do1:180,objectHeight:45,zoom:2,offsetX:0,offsetY:0,lenses:[{x:0,focal:50},{x:160,focal:100},{x:320,focal:150}]};
+const focalOptions=[-200,-150,-100,-50,50,100,150,200];let raf=null;
+function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=null;draw()})}
+function activeLenses(){return state.lenses.slice(0,Number(lensCount.value))}function objectX(){return state.lenses[0].x-state.do1}
+function wx(x){return canvas.width/2+state.offsetX+x*state.zoom}function wy(y){return canvas.height/2+state.offsetY-y*state.zoom}
+function syncMain(){
+objectDistance.value=objectDistanceNum.value=state.do1;
+objectHeight.value=objectHeightNum.value=state.objectHeight;
+zoom.value=zoomNum.value=state.zoom.toFixed(1);
+axisSize.value=axisSizeNum.value=AXIS_LIMIT;
+}
+function isDark(){return document.body.classList.contains("dark")}
+function themeText(){return isDark()?"#f1f5f9":"#111827"}
+function themeSoft(){return isDark()?"#cbd5e1":"#475569"}
+function themeGrid(){return isDark()?"#334155":"#dbe3ee"}
+function themeCanvas(){return isDark()?"#111827":"#ffffff"}
+function themeLabelBg(){return isDark()?"rgba(30,41,59,.94)":"rgba(255,255,255,.94)"}
+function textBox(t,x,y,c=null,s=14,b=false,a="left"){ctx.font=`${b?"bold ":""}${s}px Arial`;const m=ctx.measureText(t);let px=wx(x),py=wy(y);if(a=="center")px-=m.width/2;if(a=="right")px-=m.width;px=Math.max(8,Math.min(px,canvas.width-m.width-8));py=Math.max(s+8,Math.min(py,canvas.height-8));ctx.fillStyle=themeLabelBg();ctx.fillRect(px-5,py-s-3,m.width+10,s+8);ctx.strokeStyle=themeGrid();ctx.strokeRect(px-5,py-s-3,m.width+10,s+8);ctx.fillStyle=c||themeText();ctx.fillText(t,px,py)}
+function visible(){return{minX:AXIS_MIN(),maxX:AXIS_MAX(),minY:(state.offsetY-canvas.height/2)/state.zoom+12,maxY:(state.offsetY+canvas.height/2)/state.zoom-12}}
+function clipSegment(x1,y1,x2,y2){
+ const r=visible(); let t0=0,t1=1,dx=x2-x1,dy=y2-y1;
+ const tests=[[-dx,x1-r.minX],[dx,r.maxX-x1],[-dy,y1-r.minY],[dy,r.maxY-y1]];
+ for(const [p,q] of tests){if(Math.abs(p)<1e-12){if(q<0)return null}else{const t=q/p;if(p<0){if(t>t1)return null;if(t>t0)t0=t}else{if(t<t0)return null;if(t<t1)t1=t}}}
+ return{x1:x1+t0*dx,y1:y1+t0*dy,x2:x1+t1*dx,y2:y1+t1*dy};
+}
+function rawLine(x1,y1,x2,y2,c,w=2,d=false,clip=true){
+ const seg=clip?clipSegment(x1,y1,x2,y2):{x1,y1,x2,y2}; if(!seg)return;
+ ctx.strokeStyle=c;ctx.lineWidth=w;ctx.setLineDash(d?[10,8]:[]);
+ ctx.beginPath();ctx.moveTo(wx(seg.x1),wy(seg.y1));ctx.lineTo(wx(seg.x2),wy(seg.y2));ctx.stroke();ctx.setLineDash([]);
+}
+function head(x1,y1,x2,y2,c,z=10){const seg=clipSegment(x1,y1,x2,y2); if(!seg)return;const a=Math.atan2(wy(seg.y2)-wy(seg.y1),wx(seg.x2)-wx(seg.x1)),cx=wx(seg.x2),cy=wy(seg.y2);ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx-z*Math.cos(a-Math.PI/6),cy-z*Math.sin(a-Math.PI/6));ctx.lineTo(cx-z*Math.cos(a+Math.PI/6),cy-z*Math.sin(a+Math.PI/6));ctx.closePath();ctx.fill()}
+function ray(x1,y1,x2,y2,c,w=2.5){rawLine(x1,y1,x2,y2,c,w,true,true);head(x1,y1,x2,y2,c)}
+function solidArrow(x1,y1,x2,y2,c,w=2){rawLine(x1,y1,x2,y2,c,w,false,true);head(x1,y1,x2,y2,c)}
+function point(x,y,c,label="",lx=8,ly=-10){const v=visible();if(x<v.minX||x>v.maxX||y<v.minY||y>v.maxY)return;ctx.fillStyle=c;ctx.beginPath();ctx.arc(wx(x),wy(y),6,0,Math.PI*2);ctx.fill();ctx.strokeStyle=isDark()?"#f8fafc":"#111827";ctx.lineWidth=2;ctx.stroke();if(label)textBox(label,x+lx,y+ly,c,14,true)}
+function vArrow(x,y1,y2,c,label){const seg=clipSegment(x,y1,x,y2);if(!seg)return;rawLine(x,y1,x,y2,c,4,false,true);head(x,y1,x,y2,c,14);if(label){const clipped=Math.abs(seg.y2-y2)>1e-6;textBox(clipped?label+" (contin\u00faa)":label,x+8,seg.y2+(seg.y2>=seg.y1?12:-16),c,15,true)}}
+function lensImg(ox,oh,l){const f=l.focal,s=l.x-ox;if(Math.abs(s)<1e-6)return{valid:false,infinity:false,s,si:Infinity,x:Infinity,h:Infinity,m:Infinity,f,real:false,inverted:false};const inv=1/f-1/s;if(Math.abs(inv)<1e-8)return{valid:false,infinity:true,s,si:Infinity,x:Infinity,h:Infinity,m:Infinity,f,real:true,inverted:false};const si=1/inv,x=l.x+si,m=-si/s,h=oh*m,valid=isFinite(x)&&isFinite(h)&&Math.abs(x)<20000&&Math.abs(h)<200000;return{s,si,x,h,m,f,real:si>0,inverted:h<0,valid,infinity:false}}
+function system(){let ox=objectX(),oh=state.objectHeight,ch=[];for(const l of activeLenses()){const img=lensImg(ox,oh,l);ch.push({lens:l,objectX:ox,objectH:oh,image:img});if(!img.valid)break;ox=img.x;oh=img.h}return ch}
+function bounds(){const ch=system();let ys=[-130,130,state.objectHeight];ch.forEach(s=>{ys.push(s.objectH);if(s.image.valid)ys.push(Math.max(-260,Math.min(260,s.image.h)))});return{minX:AXIS_MIN(),maxX:AXIS_MAX(),minY:Math.min(...ys)-50,maxY:Math.max(...ys)+50}}
+function autoFit(){const b=bounds(),pad=80,zx=(canvas.width-2*pad)/(b.maxX-b.minX),zy=(canvas.height-2*pad)/(b.maxY-b.minY);state.zoom=Math.max(.5,Math.min(6,Math.min(zx,zy)));state.offsetX=-((b.minX+b.maxX)/2)*state.zoom;state.offsetY=((b.minY+b.maxY)/2)*state.zoom;syncMain();draw()}
+function grid(){const v=visible(),st=state.zoom>4?10:state.zoom>2?25:50;for(let x=AXIS_MIN();x<=AXIS_MAX();x+=st)rawLine(x,v.minY,x,v.maxY,themeGrid(),1,true,false);for(let y=Math.floor(v.minY/st)*st;y<=v.maxY;y+=st)rawLine(AXIS_MIN(),y,AXIS_MAX(),y,themeGrid(),1,true,false)}
+function axis(){rawLine(AXIS_MIN(),0,AXIS_MAX(),0,themeText(),2.4,false);textBox("Eje \u00f3ptico",AXIS_MAX()-80,12,themeText(),15,true);const st=state.zoom>3?25:50;for(let x=AXIS_MIN();x<=AXIS_MAX();x+=st){rawLine(x,-3,x,3,themeText(),1,false,false);textBox(`${x}`,x,-12,themeText(),12,false,"center")}}
+function drawLens(l,i){const x=l.x,f=l.focal,H=110;rawLine(x,-H,x,H,"#2563eb",4,false,true);ctx.strokeStyle="rgba(37,99,235,.65)";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(wx(x),wy(0),12,H*state.zoom,0,0,Math.PI*2);ctx.stroke();point(x,0,"#2563eb");point(x-f,0,"#dc2626",`F${i+1}`,-18,20);textBox(`${(x-f).toFixed(0)} mm`,x-f,-16,"#dc2626",12,false,"center");point(x+f,0,"#dc2626",`F'${i+1}`,-18,20);textBox(`${(x+f).toFixed(0)} mm`,x+f,-16,"#dc2626",12,false,"center");textBox(`Lente ${i+1}`,x,120+i*24,"#2563eb",16,true,"center");textBox(`f = ${f.toFixed(0)} mm`,x,138+i*24,"#dc2626",14,true,"center")}
+function extendFromTo(x1,y1,x2,y2,scale=7){return{x:x1+(x2-x1)*scale,y:y1+(y2-y1)*scale}}
+function rays(s){
+ const ox=s.objectX,oh=s.objectH,l=s.lens,img=s.image;
+ if(img.infinity){
+   const v=visible();
+   ray(ox,oh,l.x,oh,"#ef4444"); ray(l.x,oh,AXIS_MAX(),oh,"#ef4444");
+   ray(ox,oh,l.x,0,"#2563eb"); ray(l.x,0,AXIS_MAX(),0,"#2563eb");
+   ray(ox,oh,AXIS_MAX(),oh-(AXIS_MAX()-ox)*(oh/(l.x-ox)),"#7c3aed");
+   textBox("Rayos paralelos: imagen en infinito",l.x+40,v.maxY-35,themeText(),14,true);
+   return;
+ }
+ const target=img.valid?{x:img.x,y:img.h}:extendFromTo(l.x,oh,l.x+220,oh-100,3);
+ const long1=extendFromTo(l.x,oh,target.x,target.y,8);
+ const long2=extendFromTo(l.x,0,target.x,target.y,8);
+ const long3=extendFromTo(ox,oh,target.x,target.y,8);
+ ray(ox,oh,l.x,oh,"#ef4444"); ray(l.x,oh,long1.x,long1.y,"#ef4444");
+ ray(ox,oh,l.x,0,"#2563eb"); ray(l.x,0,long2.x,long2.y,"#2563eb");
+ ray(ox,oh,long3.x,long3.y,"#7c3aed");
+  if(img.valid)point(img.x,img.h,themeText(),"Intersecci\u00f3n",8,-12);
+}
+function distances(s,i){const img=s.image;if(!img.valid)return;const ox=s.objectX,lx=s.lens.x,ix=img.x,y1=-90-i*30;rawLine(ox,0,ox,y1-33,"#94a3b8",1.2,true,true);rawLine(lx,0,lx,y1-33,"#94a3b8",1.2,true,true);rawLine(ix,0,ix,y1-33,"#94a3b8",1.2,true,true);solidArrow(ox,y1,lx,y1,"#15803d",2);solidArrow(lx,y1,ox,y1,"#15803d",2);textBox(`do${i+1}=${img.s.toFixed(1)} mm`,(ox+lx)/2,y1+10,"#15803d",13,true,"center");solidArrow(lx,y1,ix,y1,"#15803d",2);solidArrow(ix,y1,lx,y1,"#15803d",2);textBox(`di${i+1}=${img.si.toFixed(1)} mm`,(lx+ix)/2,y1+10,"#15803d",13,true,"center")}
+function legend(){const v=visible(),x=AXIS_MIN()+20,y=v.maxY-18,px=wx(x),py=wy(y);ctx.fillStyle=themeLabelBg();ctx.strokeStyle=themeGrid();ctx.fillRect(px,py,310,96);ctx.strokeRect(px,py,310,96);rawLine(x+8,y-20,x+45,y-20,"#ef4444",2.5,true,false);textBox("Rayo paralelo",x+55,y-16,themeText(),13);rawLine(x+8,y-43,x+45,y-43,"#2563eb",2.5,true,false);textBox("Rayo por el foco",x+55,y-39,themeText(),13);rawLine(x+8,y-66,x+45,y-66,"#7c3aed",2.5,true,false);textBox("Rayo por el centro",x+55,y-62,themeText(),13)}
+function imageLabel(img,isFinal,i){const tipo=img.real?"real":"virtual",ori=img.inverted?"invertida":"derecha";return isFinal?`Imagen final: ${tipo}, ${ori}`:`Imagen intermedia ${i+1}: ${tipo}, ${ori}`}
+function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle=themeCanvas();ctx.fillRect(0,0,canvas.width,canvas.height);grid();axis();legend();activeLenses().forEach(drawLens);vArrow(objectX(),0,state.objectHeight,themeText(),"Objeto");const ch=system();ch.forEach(rays);ch.forEach(distances);ch.forEach((s,i)=>{const img=s.image;if(!img.valid)return;const fin=i===ch.length-1;vArrow(img.x,0,img.h,fin?"#f97316":"#64748b",fin?"Imagen final":`Intermedia ${i+1}`);const seg=clipSegment(img.x,0,img.x,img.h);if(seg)textBox(imageLabel(img,fin,i),img.x+10,seg.y2-16,fin?"#f97316":"#64748b",14,true)});results(ch)}
+function results(ch){let h="<b>Resultados</b>";ch.forEach((s,i)=>{const img=s.image;h+=`<hr><b>Lente ${i+1}</b><br>f=${img.f.toFixed(1)} mm<br>do=${img.s.toFixed(2)} mm<br>`;if(img.infinity){h+=`di = &infin;<br><b>Imagen en el infinito:</b> los rayos emergentes son paralelos.`}else if(img.valid){h+=`di=${img.si.toFixed(2)} mm<br>M=${img.m.toFixed(2)}<br>${imageLabel(img,i===ch.length-1,i)}`}else h+=`No hay imagen finita representable. Se muestran solo los caminos &oacute;pticos.`});resultsDiv.innerHTML=h}
+const resultsDiv=document.getElementById("results");
+function controls(){const c=document.getElementById("lensControls");c.innerHTML="";for(let i=0;i<Number(lensCount.value);i++){const card=document.createElement("div");card.className="lens-card";const opts=focalOptions.map(f=>`<option value="${f}" ${state.lenses[i].focal===f?"selected":""}>${f>0?"+":""}${f} mm</option>`).join("");card.innerHTML=`<b>Lente ${i+1}</b><label>Distancia focal</label><select onchange="state.lenses[${i}].focal=Number(this.value);schedule()">${opts}</select><label>Posici&oacute;n X [mm]</label><div class="row"><input id="lensRange${i}" type="range" min="-450" max="450" value="${state.lenses[i].x}" oninput="setLensX(${i},this.value)"><input id="lensNum${i}" type="number" min="-450" max="450" value="${state.lenses[i].x}" oninput="setLensX(${i},this.value)"></div><div class="small">f=${state.lenses[i].focal} mm</div>`;c.appendChild(card)}}
+function setLensX(i,v){state.lenses[i].x=Math.max(-450,Math.min(450,Number(v)));const r=document.getElementById("lensRange"+i),n=document.getElementById("lensNum"+i);if(r)r.value=state.lenses[i].x;if(n)n.value=state.lenses[i].x;schedule()}
+function resetSystem(){state.do1=180;state.objectHeight=45;state.zoom=2;state.offsetX=0;state.offsetY=0;state.lenses=[{x:0,focal:50},{x:160,focal:100},{x:320,focal:150}];lensCount.value=1;controls();syncMain();autoFit()}
+function saveImage(){const a=document.createElement("a");a.download="simulador_lentes_opticas.png";a.href=canvas.toDataURL("image/png");a.click()}
+function updDo(v){state.do1=Math.max(20,Math.min(450,Number(v)));syncMain();schedule()}function updH(v){state.objectHeight=Math.max(5,Math.min(100,Number(v)));syncMain();schedule()}function updZ(v){state.zoom=Math.max(.5,Math.min(6,Number(v)));state.offsetX=0;state.offsetY=0;syncMain();schedule()}
+objectDistance.oninput=e=>updDo(e.target.value);objectDistanceNum.oninput=e=>updDo(e.target.value);objectHeight.oninput=e=>updH(e.target.value);objectHeightNum.oninput=e=>updH(e.target.value);zoom.oninput=e=>updZ(e.target.value);zoomNum.oninput=e=>updZ(e.target.value);lensCount.onchange=()=>{controls();schedule()};
+
+function updateAxis(v){
+ AXIS_LIMIT=Math.max(500,Math.min(3000,Number(v)));
+ syncMain();
+ autoFit();
+}
+axisSize.oninput=e=>updateAxis(e.target.value);
+axisSizeNum.oninput=e=>updateAxis(e.target.value);
+
+controls();syncMain();autoFit();
+</script>
+
+
+<section class="instructions sim-instructions" aria-label="Instrucciones de la pr&aacute;ctica">
+  <h3>Instrucciones</h3>
+  <ul>
+    <li>Ajusta los par&aacute;metros desde el panel de controles.</li>
+    <li>Observa la respuesta del simulador y compara los resultados.</li>
+    <li>Usa las herramientas de exportaci&oacute;n cuando la pr&aacute;ctica las incluya.</li>
+  </ul>
+</section>
+<footer class="sim-footer">
+  &copy; 2026 Simuladores de F&iacute;sica &mdash; Desarrollado por <strong>MSc. Jorge Chimarro Alvear</strong>
+</footer>
+<script src="../../assets/js/simulator-theme.js"></script>
+</body></html>

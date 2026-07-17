@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Plantilla Base - Simuladores de Física</title>
+
+<style>
+/* =========================
+   VARIABLES GLOBALES
+========================= */
+:root{
+  --bg:#eef2f7;
+  --panel:#ffffff;
+  --header:#111827;
+  --text:#111827;
+  --text-soft:#475569;
+  --primary:#2563eb;
+  --primary-hover:#1d4ed8;
+  --border:#dbe3ee;
+  --shadow:0 2px 10px rgba(0,0,0,.08);
+  --canvas:#ffffff;
+}
+
+body.dark{
+  --bg:#0f172a;
+  --panel:#1e293b;
+  --header:#020617;
+  --text:#f1f5f9;
+  --text-soft:#cbd5e1;
+  --primary:#3b82f6;
+  --primary-hover:#60a5fa;
+  --border:#334155;
+  --shadow:0 2px 10px rgba(0,0,0,.35);
+  --canvas:#111827;
+}
+
+/* =========================
+   ESTILOS GENERALES
+========================= */
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family:Arial, Helvetica, sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  transition:.25s ease;
+}
+
+/* =========================
+   HEADER
+========================= */
+header{
+  background:var(--header);
+  color:white;
+  padding:14px 22px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  box-shadow:var(--shadow);
+}
+
+.header-left h1{
+  margin:0;
+  font-size:24px;
+}
+
+.header-left p{
+  margin:4px 0 0;
+  font-size:13px;
+  opacity:.8;
+}
+
+/* =========================
+   SWITCH MODO OSCURO
+========================= */
+.theme-toggle{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:14px;
+}
+
+.switch{
+  position:relative;
+  width:52px;
+  height:28px;
+}
+
+.switch input{
+  display:none;
+}
+
+.slider{
+  position:absolute;
+  inset:0;
+  background:#94a3b8;
+  border-radius:40px;
+  cursor:pointer;
+  transition:.25s;
+}
+
+.slider::before{
+  content:"";
+  position:absolute;
+  width:22px;
+  height:22px;
+  left:3px;
+  top:3px;
+  border-radius:50%;
+  background:white;
+  transition:.25s;
+}
+
+.switch input:checked + .slider{
+  background:#2563eb;
+}
+
+.switch input:checked + .slider::before{
+  transform:translateX(24px);
+}
+
+/* =========================
+   LAYOUT
+========================= */
+main{
+  display:grid;
+  grid-template-columns:360px 1fr;
+  gap:14px;
+  padding:14px;
+}
+
+@media(max-width:1000px){
+  main{
+    grid-template-columns:1fr;
+  }
+}
+
+/* =========================
+   PANEL
+========================= */
+.panel{
+  background:var(--panel);
+  border-radius:12px;
+  padding:16px;
+  box-shadow:var(--shadow);
+  border:1px solid var(--border);
+}
+
+.panel h2{
+  margin-top:0;
+  font-size:20px;
+}
+
+.section-title{
+  margin-top:24px;
+  margin-bottom:10px;
+  font-size:15px;
+  font-weight:bold;
+  color:var(--text-soft);
+}
+
+/* =========================
+   INPUTS
+========================= */
+label{
+  display:block;
+  margin-top:12px;
+  font-size:14px;
+  font-weight:bold;
+}
+
+.row{
+  display:grid;
+  grid-template-columns:1fr 90px;
+  gap:10px;
+  align-items:center;
+}
+
+input,
+select{
+  width:100%;
+  padding:8px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:var(--panel);
+  color:var(--text);
+}
+
+/* =========================
+   BOTONES
+========================= */
+.buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:18px;
+}
+
+button{
+  border:none;
+  padding:11px;
+  border-radius:8px;
+  background:var(--primary);
+  color:white;
+  font-weight:bold;
+  cursor:pointer;
+  transition:.2s;
+}
+
+button:hover{
+  background:var(--primary-hover);
+  transform:translateY(-1px);
+}
+
+button.secondary{
+  background:#475569;
+}
+
+/* =========================
+   RESULTADOS
+========================= */
+.cards{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:14px;
+}
+
+.card{
+  background:var(--bg);
+  border-radius:10px;
+  padding:12px;
+  border:1px solid var(--border);
+}
+
+.card span{
+  font-size:12px;
+  color:var(--text-soft);
+}
+
+.card h3{
+  margin:6px 0 0;
+  font-size:22px;
+}
+
+/* =========================
+   ÁREA VISUAL
+========================= */
+.visual-area{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.canvas-container{
+  background:var(--panel);
+  border-radius:12px;
+  padding:12px;
+  box-shadow:var(--shadow);
+  border:1px solid var(--border);
+}
+
+canvas{
+  width:100%;
+  height:700px;
+  background:var(--canvas);
+  border-radius:10px;
+  border:1px solid var(--border);
+}
+
+/* =========================
+   INSTRUCCIONES
+========================= */
+.instructions{
+  background:var(--panel);
+  border-radius:12px;
+  padding:14px;
+  box-shadow:var(--shadow);
+  border:1px solid var(--border);
+}
+
+.instructions h3{
+  margin-top:0;
+}
+
+/* =========================
+   FOOTER
+========================= */
+footer{
+  margin-top:20px;
+  background:var(--header);
+  color:white;
+  text-align:center;
+  padding:14px;
+  font-size:13px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- =========================
+     HEADER
+========================= -->
+<header>
+
+  <div class="header-left">
+    <h1>Simulador de Física</h1>
+    <p>Descripción breve del simulador en una sola línea.</p>
+  </div>
+
+  <div class="theme-toggle">
+
+    <span>??</span>
+
+    <label class="switch">
+      <input type="checkbox" id="themeSwitch">
+      <span class="slider"></span>
+    </label>
+
+  </div>
+
+</header>
+
+<!-- =========================
+     CONTENIDO
+========================= -->
+<main>
+
+  <!-- =====================
+       PANEL CONTROLES
+  ====================== -->
+  <section class="panel">
+
+    <h2>Controles</h2>
+
+    <!-- CONTROLES GENÉRICOS -->
+    <label>Variable 1</label>
+
+    <div class="row">
+      <input type="range">
+      <input type="number">
+    </div>
+
+    <label>Variable 2</label>
+
+    <div class="row">
+      <input type="range">
+      <input type="number">
+    </div>
+
+    <!-- BOTONES -->
+    <div class="buttons">
+
+      <button>? Iniciar</button>
+      <button>? Pausar</button>
+
+      <button>? Reiniciar</button>
+      <button>? CSV</button>
+
+      <button>PNG</button>
+      <button class="secondary">? Opcional</button>
+
+    </div>
+
+    <!-- RESULTADOS -->
+    <div class="section-title">
+      Resultados
+    </div>
+
+    <div class="cards">
+
+      <div class="card">
+        <span>Resultado 1</span>
+        <h3>0.00</h3>
+      </div>
+
+      <div class="card">
+        <span>Resultado 2</span>
+        <h3>0.00</h3>
+      </div>
+
+      <div class="card">
+        <span>Resultado 3</span>
+        <h3>0.00</h3>
+      </div>
+
+      <div class="card">
+        <span>Resultado 4</span>
+        <h3>0.00</h3>
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- =====================
+       ÁREA PRINCIPAL
+  ====================== -->
+  <section class="visual-area">
+
+    <!-- CANVAS / GRÁFICO -->
+    <div class="canvas-container">
+
+      <!-- AQUÍ VA EL SIMULADOR -->
+      <canvas id="canvas"></canvas>
+
+    </div>
+
+    <!-- INSTRUCCIONES -->
+    <div class="instructions">
+
+      <h3>Instrucciones</h3>
+
+      <ul>
+        <li>Modifique los parámetros usando los controles.</li>
+        <li>Ejecute la simulación.</li>
+        <li>Analice los resultados obtenidos.</li>
+        <li>Puede exportar los datos o imágenes.</li>
+      </ul>
+
+    </div>
+
+  </section>
+
+</main>
+
+<!-- =========================
+     FOOTER
+========================= -->
+<footer>
+
+© 2026 Simuladores de Física -
+Desarrollado por <strong>MSc. Jorge Chimarro Alvear</strong>
+
+</footer>
+
+<!-- =========================
+     SCRIPT BASE
+========================= -->
+<script>
+
+/* =========================
+   MODO OSCURO
+========================= */
+
+const switchTheme = document.getElementById("themeSwitch");
+
+switchTheme.addEventListener("change",()=>{
+
+  document.body.classList.toggle("dark");
+
+});
+
+/* =========================
+   CANVAS DEMO
+========================= */
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = 1400;
+canvas.height = 700;
+
+ctx.fillStyle = "#2563eb";
+ctx.fillRect(150,150,250,120);
+
+ctx.font = "30px Arial";
+ctx.fillText("Área del simulador",500,300);
+
+</script>
+
+</body>
+</html>

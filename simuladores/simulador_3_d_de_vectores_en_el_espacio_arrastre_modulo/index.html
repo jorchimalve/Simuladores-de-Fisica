@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vectores en el espacio 3D</title>
+  
+  <meta name="description" content="Analiza componentes, m&oacute;dulo, direcci&oacute;n y proyecciones vectoriales en un entorno tridimensional.">
+
+  
+  <link rel="stylesheet" href="../../assets/css/simulator-base.css">
+</head>
+<body>
+<header class="sim-header">
+  <div class="sim-title-group">
+    <h1>Vectores en el espacio 3D</h1>
+    <p class="sim-subtitle">Analiza componentes, m&oacute;dulo, direcci&oacute;n y proyecciones vectoriales en un entorno tridimensional.</p>
+  </div>
+  <label class="theme-toggle">
+    <span>Modo oscuro</span>
+    <input type="checkbox" id="themeSwitch">
+  </label>
+</header>
+
+
+  
+
+  <div class="container">
+    <!-- Panel de controles -->
+    <section class="panel controls" aria-label="Controles del simulador">
+      <h2>Par&aacute;metros del vector</h2>
+
+      <div class="row">
+        <label for="magRange">M&oacute;dulo |v|</label>
+        <input id="magRange" type="range" min="0.5" max="20" step="0.1" value="8" />
+        <input id="magNum" class="num" type="number" min="0.5" max="20" step="0.1" value="8" />
+      </div>
+
+      <div class="buttons">
+        <button id="snapAxis" type="button" aria-pressed="false">Bloquear radio</button>
+        <button id="showPlanes" type="button" class="toggled" aria-pressed="true">Mostrar auxiliares</button>
+        <button id="toggleXY" class="">Dir. en plano XY</button>
+        <button id="toggleYZ" class="">Dir. en plano YZ</button>
+  <button id="toggleXZ" class="">Dir. en plano XZ</button>
+  <button id="anglesBtn" class="">&Aacute;ngulos directores</button>
+  <button id="resetBtn" class="warn">Reiniciar</button>
+  <button data-fit-view>Ajustar vista</button>
+</div>
+
+      <h2 style="margin-top:16px">Componentes actuales</h2>
+      <div class="stats grid-3">
+        <div class="card"><span>x</span><strong id="vxOut">0.00</strong></div>
+        <div class="card"><span>y</span><strong id="vyOut">0.00</strong></div>
+        <div class="card"><span>z</span><strong id="vzOut">0.00</strong></div>
+        <div class="card"><span>|v|</span><strong id="vmagOut">0.00</strong></div>
+        <div class="card"><span>&theta;<sub>xy</sub> (&deg;)</span><strong id="angXYOut">0.0</strong></div>
+        <div class="card"><span>&theta;<sub>z</sub> (&deg;)</span><strong id="angZOut">0.0</strong></div>
+      </div>
+
+      <h2 style="margin-top:16px">&Aacute;ngulos directores</h2>
+      <div class="stats grid-3">
+        <div class="card"><span>&alpha; (con X)</span><strong id="alphaOut">0.0&deg;</strong></div>
+        <div class="card"><span>&beta; (con Y)</span><strong id="betaOut">0.0&deg;</strong></div>
+        <div class="card"><span>&gamma; (con Z)</span><strong id="gammaOut">0.0&deg;</strong></div>
+      </div>
+</section>
+
+    <!-- Lienzo / WebGL -->
+    <section class="panel canvas-wrap" aria-label="Escena del simulador">
+      <div class="legend">Ejes: X (rojo), Y (verde), Z (azul). Flechas finas = proyecciones sobre ejes. Botones de planos solo muestran proyecciones del vector actual.</div>
+      <div id="scene3d"></div>
+    </section>
+  </div>
+
+  <div id="tests" hidden hidden hidden hidden>
+    <details>
+      <summary>Notas</summary>
+      <ul>
+        <li>Arrastra la esfera para cambiar la <em>direcci&oacute;n</em>.</li>
+        <li>Usa el control de m&oacute;dulo para ajustar la <em>longitud</em>.</li>
+        <li>Los botones de <b>planos</b> <u>no</u> modifican el vector, solo muestran su proyecci&oacute;n sobre XY / YZ / XZ.</li>
+      </ul>
+    </details>
+  </div>
+
+  <div class="footer">
+    Consejo: orbita con clic izq., desplaza con clic der., zoom con rueda.
+  </div>
+
+  <!-- ES Modules desde esm.sh para resolver correctamente 'three' y addons -->
+  <script type="module">
+    import * as THREE from 'https://esm.sh/three@0.160.0';
+    import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+    import { DragControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/DragControls.js';
+
+    // ---------- Escena básica ----------
+    const container = document.getElementById('scene3d');
+    const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    container.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b0e14);
+
+    const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 1000);
+    camera.position.set(16, 12, 18);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    function sizeRenderer(){
+      const rect = container.getBoundingClientRect();
+      const w = Math.max(320, Math.floor(rect.width));
+      const h = Math.max(260, Math.floor(rect.height));
+      renderer.setSize(w, h, false);
+      camera.aspect = w/h; camera.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', sizeRenderer);
+
+    // Luces
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(10,20,10);
+    scene.add(dirLight);
+
+    // Ejes y grillas (planos XY, XZ, YZ)
+    const axes = new THREE.AxesHelper(12); scene.add(axes);
+
+    const gridXZ = new THREE.GridHelper(40, 40, 0x1f2937, 0x0f172a); // suelo (y=0)
+    scene.add(gridXZ);
+    const gridXY = new THREE.GridHelper(40, 40, 0x172554, 0x0b1220); // z=0
+    gridXY.rotation.x = Math.PI/2; scene.add(gridXY);
+    const gridYZ = new THREE.GridHelper(40, 40, 0x172554, 0x0b1220); // x=0
+    gridYZ.rotation.z = Math.PI/2; scene.add(gridYZ);
+
+    // Vector principal
+    const origin = new THREE.Vector3(0,0,0);
+    let magnitude = 8;
+    let direction = new THREE.Vector3(1,1,0.5).normalize();
+
+    const arrowColor = 0x7dd3fc;
+    const arrow = new THREE.ArrowHelper(direction, origin, magnitude, arrowColor, 0.8, 0.5);
+    scene.add(arrow);
+
+    // Flechas de proyección sobre ejes (misma v proyectada en X, Y, Z)
+    const arrowProjX = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), origin, 0, 0xef4444, 0.6, 0.3);
+    const arrowProjY = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), origin, 0, 0x22c55e, 0.6, 0.3);
+    const arrowProjZ = new THREE.ArrowHelper(new THREE.Vector3(0,0,1), origin, 0, 0x3b82f6, 0.6, 0.3);
+    scene.add(arrowProjX, arrowProjY, arrowProjZ);
+
+    // Flechas de proyección en PLANOS (desde el origen, acostadas sobre el plano)
+    const arrowPlaneXY = new THREE.ArrowHelper(new THREE.Vector3(1,1,0).normalize(), origin, 0, 0x9ca3af, 0.6, 0.3); // gris
+    const arrowPlaneYZ = new THREE.ArrowHelper(new THREE.Vector3(0,1,1).normalize(), origin, 0, 0x9ca3af, 0.6, 0.3);
+    const arrowPlaneXZ = new THREE.ArrowHelper(new THREE.Vector3(1,0,1).normalize(), origin, 0, 0x9ca3af, 0.6, 0.3);
+    arrowPlaneXY.visible = arrowPlaneYZ.visible = arrowPlaneXZ.visible = false;
+    scene.add(arrowPlaneXY, arrowPlaneYZ, arrowPlaneXZ);
+
+    // Esfera draggable (punta del vector)
+    const tipGeo = new THREE.SphereGeometry(0.25, 32, 32);
+    const tipMat = new THREE.MeshStandardMaterial({color:0xffffff, metalness:0.2, roughness:0.3});
+    const tip = new THREE.Mesh(tipGeo, tipMat);
+    scene.add(tip);
+
+    // Puntos de proyección en ejes (esferas) y líneas punteadas
+    function makeMarker(color){
+      const g = new THREE.SphereGeometry(0.18, 24, 24);
+      const m = new THREE.MeshStandardMaterial({color, emissive: color, emissiveIntensity:0.4, metalness:0.1, roughness:0.7});
+      return new THREE.Mesh(g,m);
+    }
+    const markX = makeMarker(0xef4444), markY = makeMarker(0x22c55e), markZ = makeMarker(0x3b82f6);
+    scene.add(markX, markY, markZ);
+
+    function makeDashed(color){
+      const mat = new THREE.LineDashedMaterial({color, dashSize:0.4, gapSize:0.3});
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute([0,0,0, 0,0,0], 3)); // seguro
+      const line = new THREE.Line(geo, mat);
+      line.computeLineDistances();
+      return line;
+    }
+    const lineToX = makeDashed(0xef4444);
+    const lineToY = makeDashed(0x22c55e);
+    const lineToZ = makeDashed(0x3b82f6);
+    scene.add(lineToX, lineToY, lineToZ);
+
+    // Grupo para "marcas" de Ángulos directores (arcos alfa, beta, gamma)
+    const anglesGroup = new THREE.Group();
+    scene.add(anglesGroup);
+    let arcAlpha = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({color:0xef4444}));
+    let arcBeta  = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({color:0x22c55e}));
+    let arcGamma = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({color:0x3b82f6}));
+    anglesGroup.add(arcAlpha, arcBeta, arcGamma);
+    anglesGroup.visible = false;
+
+    // Controles de arrastre (para la esfera tip)
+    const dragControls = new DragControls([tip], camera, renderer.domElement);
+    dragControls.addEventListener('dragstart', () => { controls.enabled = false; });
+    dragControls.addEventListener('drag', () => {
+      const p = tip.position.clone();
+      if (p.length() < 1e-6) p.set(1,0,0);
+      direction.copy(p.normalize());
+      if (lockRadius) {
+        tip.position.copy(direction.clone().multiplyScalar(magnitude));
+      }
+      updateVector();
+    });
+    dragControls.addEventListener('dragend', () => {
+      controls.enabled = true;
+      tip.position.copy(direction.clone().multiplyScalar(magnitude));
+      updateVector();
+    });
+
+    // ---------- UI ----------
+    const magRange = document.getElementById('magRange');
+    const magNum = document.getElementById('magNum');
+    const snapAxis = document.getElementById('snapAxis');
+    const showPlanes = document.getElementById('showPlanes');
+
+    const vxEl = document.getElementById('vxOut');
+    const vyEl = document.getElementById('vyOut');
+    const vzEl = document.getElementById('vzOut');
+    const vmagEl = document.getElementById('vmagOut');
+    const angXYEl = document.getElementById('angXYOut');
+    const angZEl = document.getElementById('angZOut');
+
+    const alphaEl = document.getElementById('alphaOut');
+    const betaEl  = document.getElementById('betaOut');
+    const gammaEl = document.getElementById('gammaOut');
+
+    const toggleXYBtn = document.getElementById('toggleXY');
+    const toggleYZBtn = document.getElementById('toggleYZ');
+    const toggleXZBtn = document.getElementById('toggleXZ');
+    const anglesBtn   = document.getElementById('anglesBtn');
+
+    let lockRadius = false;
+    let showHelpers = true;
+    let showXY = false, showYZ = false, showXZ = false; // estado de proyecciones en planos
+
+    function setBtnActive(btn, on){
+      btn.classList.toggle('toggled', !!on);
+      btn.setAttribute('aria-pressed', String(!!on));
+    }
+
+    snapAxis.addEventListener('click', () => {
+      lockRadius = !lockRadius;
+      setBtnActive(snapAxis, lockRadius);
+    });
+
+    showPlanes.addEventListener('click', () => {
+      showHelpers = !showHelpers;
+      setBtnActive(showPlanes, showHelpers);
+      updateVector();
+    });
+
+    function togglePlane(which){
+      if(which==='XY'){ showXY=!showXY; setBtnActive(toggleXYBtn, showXY); }
+      if(which==='YZ'){ showYZ=!showYZ; setBtnActive(toggleYZBtn, showYZ); }
+      if(which==='XZ'){ showXZ=!showXZ; setBtnActive(toggleXZBtn, showXZ); }
+      updateVector();
+    }
+
+    function toggleAngles(){
+      anglesGroup.visible = !anglesGroup.visible;
+      setBtnActive(anglesBtn, anglesGroup.visible);
+      updateVector();
+    }
+
+    toggleXYBtn.addEventListener('click', ()=>togglePlane('XY'));
+    toggleYZBtn.addEventListener('click', ()=>togglePlane('YZ'));
+    toggleXZBtn.addEventListener('click', ()=>togglePlane('XZ'));
+    anglesBtn.addEventListener('click', toggleAngles);
+
+    document.getElementById('resetBtn').addEventListener('click', () =>{
+      direction.set(1,1,0.5).normalize();
+      setMagnitude(8);
+      showXY = showYZ = showXZ = false;
+      setBtnActive(toggleXYBtn,false); setBtnActive(toggleYZBtn,false); setBtnActive(toggleXZBtn,false);
+      anglesGroup.visible=false; setBtnActive(anglesBtn,false);
+      updateVector();
+    });
+
+    function setMagnitude(val){
+      magnitude = Math.max(0.0001, Number(val) || magnitude);
+      magRange.value = magnitude; magNum.value = magnitude;
+      updateVector();
+    }
+    magRange.addEventListener('input', e => setMagnitude(e.target.value));
+    magNum.addEventListener('input', e => setMagnitude(e.target.value));
+
+    // ---------- Lógica de actualización ----------
+    function updateDashed(line, arr){
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+      if (line.geometry) line.geometry.dispose();
+      line.geometry = geo;
+      line.computeLineDistances();
+    }
+
+    function updateArc(line, axis, vdir, radius){
+      // Genera arco desde 'axis' hacia 'vdir' sobre el plano que ambos definen
+      const eps = 1e-6;
+      const a = axis.clone().normalize();
+      const v = vdir.clone().normalize();
+      let angle = Math.acos(Math.min(1, Math.max(-1, a.dot(v))));
+      if (!isFinite(angle) || angle < eps){
+        // línea m-nima para evitar geometría vacía
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute([0,0,0, 0,0,0],3));
+        line.geometry.dispose();
+        line.geometry = g; return;
+      }
+      const bTemp = v.clone().sub(a.clone().multiplyScalar(a.dot(v)));
+      if (bTemp.length() < eps){
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute([0,0,0, 0,0,0],3));
+        line.geometry.dispose(); line.geometry = g; return;
+      }
+      const b = bTemp.normalize();
+      const segments = 64;
+      const positions = [];
+      for(let i=0;i<=segments;i++){
+        const t = angle * (i/segments);
+        const p = a.clone().multiplyScalar(Math.cos(t)).add(b.clone().multiplyScalar(Math.sin(t)));
+        positions.push(radius*p.x, radius*p.y, radius*p.z);
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
+      line.geometry.dispose();
+      line.geometry = g;
+    }
+
+    function updateVector(){
+      const v = direction.clone().multiplyScalar(magnitude);
+      const vdir = direction.clone().normalize();
+
+      // Vector base
+      arrow.setDirection(direction);
+      arrow.setLength(magnitude, 0.8, 0.5);
+      tip.position.copy(v);
+
+      // Proyecciones numéricas en ejes
+      const vx = new THREE.Vector3(v.x, 0, 0);
+      const vy = new THREE.Vector3(0, v.y, 0);
+      const vz = new THREE.Vector3(0, 0, v.z);
+
+      // Marcadores y líneas desde la punta a los ejes
+      markX.position.copy(vx);
+      markY.position.copy(vy);
+      markZ.position.copy(vz);
+
+      updateDashed(lineToX, [v.x, v.y, v.z,  v.x, 0, 0]);
+      updateDashed(lineToY, [v.x, v.y, v.z,  0, v.y, 0]);
+      updateDashed(lineToZ, [v.x, v.y, v.z,  0, 0, v.z]);
+
+      // Flechas de proyección sobre ejes (sin alterar x,y,z del vector original)
+      const lenX = Math.abs(v.x), dirX = (v.x >= 0 ? 1 : -1) || 1;
+      const lenY = Math.abs(v.y), dirY = (v.y >= 0 ? 1 : -1) || 1;
+      const lenZ = Math.abs(v.z), dirZ = (v.z >= 0 ? 1 : -1) || 1;
+
+      const headL = (L)=> Math.min(0.6, Math.max(0.15, L*0.25));
+      const headW = (L)=> Math.min(0.4, Math.max(0.08, L*0.15));
+
+      arrowProjX.setDirection(new THREE.Vector3(dirX,0,0));
+      arrowProjX.setLength(lenX, headL(lenX), headW(lenX));
+      arrowProjY.setDirection(new THREE.Vector3(0,dirY,0));
+      arrowProjY.setLength(lenY, headL(lenY), headW(lenY));
+      arrowProjZ.setDirection(new THREE.Vector3(0,0,dirZ));
+      arrowProjZ.setLength(lenZ, headL(lenZ), headW(lenZ));
+
+      // Proyecciones en PLANOS (vector acostado sobre cada plano)
+      const vXY = new THREE.Vector3(v.x, v.y, 0);
+      const vYZ = new THREE.Vector3(0, v.y, v.z);
+      const vXZ = new THREE.Vector3(v.x, 0, v.z);
+
+      const Lxy = vXY.length();
+      const Lyz = vYZ.length();
+      const Lxz = vXZ.length();
+
+      if(Lxy>1e-6){ arrowPlaneXY.setDirection(vXY.clone().normalize()); arrowPlaneXY.setLength(Lxy, headL(Lxy), headW(Lxy)); }
+      if(Lyz>1e-6){ arrowPlaneYZ.setDirection(vYZ.clone().normalize()); arrowPlaneYZ.setLength(Lyz, headL(Lyz), headW(Lyz)); }
+      if(Lxz>1e-6){ arrowPlaneXZ.setDirection(vXZ.clone().normalize()); arrowPlaneXZ.setLength(Lxz, headL(Lxz), headW(Lxz)); }
+
+      arrowPlaneXY.visible = showXY && Lxy>1e-6;
+      arrowPlaneYZ.visible = showYZ && Lyz>1e-6;
+      arrowPlaneXZ.visible = showXZ && Lxz>1e-6;
+
+      // Visibilidad conjunta de elementos base
+      const vis = showHelpers;
+      lineToX.visible = lineToY.visible = lineToZ.visible = vis;
+      markX.visible = markY.visible = markZ.visible = vis;
+      gridXY.visible = gridYZ.visible = gridXZ.visible = vis;
+      arrowProjX.visible = vis && lenX > 1e-6;
+      arrowProjY.visible = vis && lenY > 1e-6;
+      arrowProjZ.visible = vis && lenZ > 1e-6;
+
+      // UI valores base
+      vxEl.textContent = v.x.toFixed(2);
+      vyEl.textContent = v.y.toFixed(2);
+      vzEl.textContent = v.z.toFixed(2);
+      vmagEl.textContent = magnitude.toFixed(2);
+      const thetaXY = Math.atan2(v.y, v.x) * 180/Math.PI;
+      const thetaZ = Math.atan2(v.z, Math.sqrt(v.x*v.x + v.y*v.y)) * 180/Math.PI; // elevación
+      angXYEl.textContent = thetaXY.toFixed(1);
+      angZEl.textContent = thetaZ.toFixed(1);
+
+      // Ángulos directores alfa, beta, gamma (con cada eje)
+      const L = Math.max(1e-9, magnitude);
+      const clamp = (x)=> Math.max(-1, Math.min(1,x));
+      const alpha = Math.acos(clamp(v.x / L)) * 180/Math.PI;
+      const beta  = Math.acos(clamp(v.y / L)) * 180/Math.PI;
+      const gamma = Math.acos(clamp(v.z / L)) * 180/Math.PI;
+      alphaEl.textContent = alpha.toFixed(1) + '\u00b0';
+      betaEl.textContent  = beta.toFixed(1) + '\u00b0';
+      gammaEl.textContent = gamma.toFixed(1) + '\u00b0';
+
+      // Arcos de Ángulos directores (si está activo)
+      const radius = Math.min(4, Math.max(1.5, magnitude*0.35));
+      if(anglesGroup.visible){
+        updateArc(arcAlpha, new THREE.Vector3(1,0,0), vdir, radius);
+        updateArc(arcBeta,  new THREE.Vector3(0,1,0), vdir, radius);
+        updateArc(arcGamma, new THREE.Vector3(0,0,1), vdir, radius);
+      }
+    }
+    // ---------- Bucle ----------
+    function animate(){
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+
+    // Init
+    function init(){
+      sizeRenderer();
+      updateVector();
+      animate();
+    }
+    init();
+  </script>
+
+
+
+<section class="instructions sim-instructions" aria-label="Instrucciones de la pr&aacute;ctica">
+  <h3>Instrucciones</h3>
+  <ul>
+    <li>Ajusta los par&aacute;metros desde el panel de controles.</li>
+    <li>Observa la respuesta del simulador y compara los resultados.</li>
+    <li>Usa las herramientas de exportaci&oacute;n cuando la pr&aacute;ctica las incluya.</li>
+  </ul>
+</section>
+<footer class="sim-footer">
+  &copy; 2026 Simuladores de F&iacute;sica &mdash; Desarrollado por <strong>MSc. Jorge Chimarro Alvear</strong>
+</footer>
+<script src="../../assets/js/simulator-theme.js"></script>
+</body>
+</html>

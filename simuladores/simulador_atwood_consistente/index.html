@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>M&aacute;quina de Atwood</title>
+  
+  <meta name="description" content="Estudia aceleraci&oacute;n, tensi&oacute;n y equilibrio din&aacute;mico en dos masas unidas por una polea.">
+
+  
+  <link rel="stylesheet" href="../../assets/css/simulator-base.css">
+</head>
+<body>
+<header class="sim-header">
+  <div class="sim-title-group">
+    <h1>M&aacute;quina de Atwood</h1>
+    <p class="sim-subtitle">Estudia aceleraci&oacute;n, tensi&oacute;n y equilibrio din&aacute;mico en dos masas unidas por una polea.</p>
+  </div>
+  <label class="theme-toggle">
+    <span>Modo oscuro</span>
+    <input type="checkbox" id="themeSwitch">
+  </label>
+</header>
+
+
+
+
+<div class="container">
+  <!-- CONTROLES -->
+  <section class="panel controls" aria-label="Controles del simulador">
+    <h2>Par&aacute;metros del sistema</h2>
+
+    <div class="row">
+      <label for="gRange">Gravedad g (m/s&sup2;)</label>
+      <input id="gRange" type="range" min="1" max="20" step="0.01" value="9.81">
+      <input id="gNum" class="num" type="number" step="0.01" value="9.81">
+    </div>
+
+    <div class="row">
+      <label for="mARange">Masa A - derecha (kg)</label>
+      <input id="mARange" type="range" min="0.10" max="20" step="0.01" value="2.50">
+      <input id="mANum" class="num" type="number" min="0.1" step="0.01" value="2.50">
+    </div>
+
+    <div class="row">
+      <label for="mBRange">Masa B - izquierda (kg)</label>
+      <input id="mBRange" type="range" min="0.10" max="20" step="0.01" value="1.50">
+      <input id="mBNum" class="num" type="number" min="0.1" step="0.01" value="1.50">
+    </div>
+
+    <div class="row">
+      <label for="speedRange">Velocidad de simulaci&oacute;n</label>
+      <input id="speedRange" type="range" min="0.1" max="1.0" step="0.05" value="0.35">
+      <input id="speedNum" class="num" type="number" min="0.1" max="1.0" step="0.05" value="0.35">
+    </div>
+
+    <div class="row">
+      <label for="modeSelect">Modo de medici&oacute;n / detenci&oacute;n</label>
+      <select id="modeSelect" class="num" style="width:210px">
+        <option value="ruler">Regla de medici&oacute;n</option>
+        <option value="stopmark">Detener en marca</option>
+      </select>
+    </div>
+
+    <div id="rulerBox">
+      <div class="row">
+        <label for="rulerZeroRange">Origen de la regla (m)</label>
+        <input id="rulerZeroRange" type="range" min="0" max="3.0" step="0.01" value="1.50">
+        <input id="rulerZeroNum" class="num" type="number" min="0" max="3.0" step="0.01" value="1.50">
+      </div>
+      <div class="card"><span>Desplazamiento medido desde la regla (m)</span><strong id="measureOut">0.000</strong></div>
+    </div>
+
+    <div id="stopBox" style="display:none">
+      <div class="row">
+        <label for="stopMarkRange">Marca de detenci&oacute;n (m)</label>
+        <input id="stopMarkRange" type="range" min="0.05" max="3.0" step="0.01" value="0.80">
+        <input id="stopMarkNum" class="num" type="number" min="0.05" max="3.0" step="0.01" value="0.80">
+      </div>
+      <div class="row">
+        <label for="stopRefSelect">Referencia de la marca</label>
+        <select id="stopRefSelect" class="num" style="width:210px">
+          <option value="fromStart" selected>Desde la posici&oacute;n inicial</option>
+          <option value="absolute">Posici&oacute;n absoluta de la masa A</option>
+        </select>
+      </div>
+      <div class="card"><span>Distancia objetivo (m)</span><strong id="stopOut">0.800</strong></div>
+    </div>
+
+    <div class="switch">
+      <input id="showVectors" type="checkbox" checked>
+      <label for="showVectors">Mostrar vectores Tensi&oacute;n y Peso</label>
+    </div>
+
+    <div id="vecBox">
+      <div class="row">
+        <label for="vecScale">Escala de vectores (px/N)</label>
+        <input id="vecScale" type="range" min="0.2" max="3" step="0.1" value="1.2">
+        <input id="vecScaleNum" class="num" type="number" min="0.2" max="3" step="0.1" value="1.2">
+      </div>
+    </div>
+
+    <div class="buttons">
+  <button id="btnPlay" class="primary">Simular</button>
+  <button id="btnPause">Pausar</button>
+  <button id="btnReset" class="danger">Reiniciar</button>
+  <button data-fit-view>Ajustar vista</button>
+</div>
+
+    <div class="stats">
+      <div class="card"><span>|a| (m/s&sup2;)</span><strong id="aOut">-</strong></div>
+      <div class="card"><span>Tensi&oacute;n T (N)</span><strong id="tOut">-</strong></div>
+      <div class="card"><span>Tiempo (s)</span><strong id="timeOut">0.00</strong></div>
+      <div class="card"><span>Estado</span><strong id="stateOut">-</strong></div>
+    </div>
+
+    <div id="badge" class="badge eq">Equilibrio</div>
+    <p class="switch" style="margin-top:10px">
+      <small style="color:var(--muted)">Suposiciones: cuerda inextensible y sin masa, polea ideal (sin rozamiento). El movimiento se detiene visualmente al llegar a topes.</small>
+    </p>
+  </section>
+
+  <!-- ESCENA -->
+  <section class="panel canvas-wrap" aria-label="Escena del simulador">
+    <div class="legend">Convenci&oacute;n: derecha = baja A; izquierda = baja B; centro = equilibrio.</div>
+    <canvas id="cv"></canvas>
+  </section>
+</div>
+
+<div class="footer">Ajusta la <b>velocidad de simulaci&oacute;n</b> para ver el desplazamiento m&aacute;s lento sin cambiar la f&iacute;sica.</div>
+
+<script>
+(()=> {
+  // ------- utilidades -------
+  const $ = s => document.querySelector(s);
+  function bind(range, num, on){
+    const set = v => { range.value=v; num.value=v; on(+v); solve(); draw(); };
+    range.addEventListener('input', e=> set(e.target.value));
+    num.addEventListener('input', e=> set(e.target.value));
+  }
+
+  // ------- DOM -------
+  const gR = $('#gRange'), gN = $('#gNum');
+  const mAR = $('#mARange'), mAN = $('#mANum');
+  const mBR = $('#mBRange'), mBN = $('#mBNum');
+  const spR = $('#speedRange'), spN = $('#speedNum');
+  const vSR = $('#vecScale'), vSN = $('#vecScaleNum');
+  const showVectors = $('#showVectors'), vecBox = $('#vecBox');
+  const modeSelect = $('#modeSelect');
+  const rulerZeroRange = $('#rulerZeroRange'), rulerZeroNum = $('#rulerZeroNum');
+  const stopMarkRange = $('#stopMarkRange'), stopMarkNum = $('#stopMarkNum');
+  const rulerBox = $('#rulerBox'), stopBox = $('#stopBox');
+  const measureOut = $('#measureOut'), stopOut = $('#stopOut');
+  const stopRefSelect = $('#stopRefSelect');
+
+  const aOut = $('#aOut'), tOut = $('#tOut'), timeOut = $('#timeOut'), stateOut = $('#stateOut');
+  const badge = $('#badge');
+
+  const btnPlay = $('#btnPlay'), btnPause = $('#btnPause'), btnReset = $('#btnReset');
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+
+  // ------- estado -------
+  const s = {
+    g: 9.81, mA: 2.5, mB: 1.5,
+    a: 0, T: 0, dir: 'eq',
+    playing: false, time: 0,
+    speed: 0.35,
+    vecScale: 1.2,
+    yA: 1.5, yB: 1.5,
+    yA0: 1.5, yB0: 1.5,
+    v: 0,
+    L: 3.2,
+    mode: 'ruler',
+    rulerZero: 1.5,
+    stopMark: 0.8,
+    stopReference: 'fromStart',
+    stopTriggered: false
+  };
+
+  // ------- enlaces UI -------
+  bind(gR,gN,v=>s.g=v);
+  bind(mAR,mAN,v=>s.mA=v);
+  bind(mBR,mBN,v=>s.mB=v);
+  bind(spR,spN,v=>s.speed=Math.max(0.05,v));
+  bind(vSR,vSN,v=>s.vecScale=v);
+  bind(rulerZeroRange,rulerZeroNum,v=>s.rulerZero=Math.max(0, Math.min(s.L, v)));
+  bind(stopMarkRange,stopMarkNum,v=>s.stopMark=Math.max(0.05, Math.min(s.L, v)));
+
+  modeSelect.addEventListener('change', ()=>{
+    s.mode = modeSelect.value;
+    rulerBox.style.display = s.mode === 'ruler' ? 'block' : 'none';
+    stopBox.style.display = s.mode === 'stopmark' ? 'block' : 'none';
+    draw();
+  });
+
+  stopRefSelect.addEventListener('change', ()=>{
+    s.stopReference = stopRefSelect.value;
+    s.stopTriggered = false;
+    draw();
+  });
+
+  showVectors.addEventListener('change', ()=>{
+    vecBox.style.display = showVectors.checked ? 'block' : 'none';
+    draw();
+  });
+
+  // ------- sizing -------
+  let W,H, dpr=window.devicePixelRatio||1;
+  function resize(){
+    const rect = cv.parentElement.getBoundingClientRect();
+    W = Math.max(320, Math.floor(rect.width));
+    H = Math.max(320, Math.floor(rect.height));
+    cv.width = Math.floor(W*dpr);
+    cv.height = Math.floor(H*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    draw();
+  }
+  window.addEventListener('resize', resize);
+
+  // ------- f&iacute;sica ideal -------
+  function solve(){
+    const {mA,mB,g} = s;
+    const eps = 1e-9;
+    if (Math.abs(mA-mB) < eps){
+      s.a = 0; s.T = mA*g; s.dir='eq';
+      // al estar en equilibrio, detenemos la velocidad para evitar deriva num&eacute;rica
+      s.v = 0;
+    } else {
+      s.a = g*(mA - mB)/(mA + mB);  // >0 => A baja (derecha)
+      s.T = mA*(g - s.a);           // tambi&eacute;n = mB*(g + s.a)
+      s.dir = (mA>mB) ? 'right' : 'left';
+    }
+    aOut.textContent = Math.abs(s.a).toFixed(3);
+    tOut.textContent = s.T.toFixed(2);
+      stateOut.textContent = s.dir==='eq' ? 'Equilibrio' : (s.dir==='right' ? 'Derecha' : 'Izquierda');
+      badge.className = 'badge ' + (s.dir==='eq' ? 'eq' : (s.dir==='right' ? 'right' : 'left'));
+    badge.textContent = s.dir==='eq' ? 'Equilibrio' : (s.dir==='right' ? 'Derecha (baja A)' : 'Izquierda (baja B)');
+  }
+
+  // ------- dibujo -------
+  const cx = () => W/2, cy = () => 120, pulleyR = 46;
+  const pxPerM = () => (H-200)/s.L;
+  const worldY = y => cy() + pulleyR + y*pxPerM();
+
+  function arrow(x1,y1,x2,y2,color,w=2.2){
+    const ang = Math.atan2(y2-y1,x2-x1);
+    const lenHead = 9, angHead = Math.PI/7;
+    ctx.save();
+    ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=w; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x2,y2);
+    ctx.lineTo(x2 - lenHead*Math.cos(ang - angHead), y2 - lenHead*Math.sin(ang - angHead));
+    ctx.lineTo(x2 - lenHead*Math.cos(ang + angHead), y2 - lenHead*Math.sin(ang + angHead));
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawBlock(xCenter, yTop, w, h, color, label){
+    const x = xCenter - w/2, y = yTop, r = 10;
+    ctx.save();
+    ctx.fillStyle = color; ctx.strokeStyle = document.body.classList.contains('dark') ? '#334155' : '#111827'; ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = document.body.classList.contains('dark') ? '#f1f5f9' : '#111827'; ctx.font='700 16px Arial';
+    ctx.fillText(label, xCenter-5, y + h/2 + 6);
+    ctx.restore();
+  }
+
+  function drawRuler(x, yTop, yBottom, originY, currentY){
+    ctx.save();
+    ctx.strokeStyle = '#fbbf24';
+    ctx.fillStyle = '#fbbf24';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, yTop);
+    ctx.lineTo(x, yBottom);
+    ctx.stroke();
+
+    for(let m=0; m<=s.L+1e-6; m+=0.1){
+      const y = worldY(m);
+      const major = Math.abs((m*10)%5) < 1e-6;
+      const len = major ? 16 : 9;
+      ctx.beginPath();
+      ctx.moveTo(x-len, y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      if(major){
+        ctx.font = '11px Arial';
+        ctx.fillText(m.toFixed(1), x-len-32, y+4);
+      }
+    }
+
+    ctx.strokeStyle = '#f59e0b';
+    ctx.setLineDash([6,4]);
+    ctx.beginPath();
+    ctx.moveTo(x-28, originY);
+    ctx.lineTo(x+22, originY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x-28, currentY);
+    ctx.lineTo(x+22, currentY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    arrow(x+28, originY, x+28, currentY, '#fbbf24', 2.4);
+    ctx.font = '12px Arial';
+    const d = Math.abs((s.yA - s.rulerZero)).toFixed(3);
+    ctx.fillText(`\u0394y = ${d} m`, x+36, (originY + currentY)/2);
+    ctx.restore();
+  }
+
+  function drawStopMark(x, distance){
+    const yMarkModel = s.stopReference === 'absolute'
+      ? Math.min(s.L, Math.max(0, distance))
+      : Math.min(s.L, Math.max(0, s.yA0 + distance));
+    const yMark = worldY(yMarkModel);
+    ctx.save();
+    ctx.strokeStyle = '#f472b6';
+    ctx.fillStyle = '#f472b6';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8,5]);
+    ctx.beginPath();
+    ctx.moveTo(x-35, yMark);
+    ctx.lineTo(x+35, yMark);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = '12px Arial';
+    const label = s.stopReference === 'absolute'
+      ? `Marca abs. ${distance.toFixed(2)} m`
+      : `Marca \u0394 ${distance.toFixed(2)} m`;
+    ctx.fillText(label, x+42, yMark+4);
+    ctx.restore();
+  }
+
+  function draw(){
+    // fondo
+    const grd = ctx.createLinearGradient(0,0,0,H);
+    const canvasBg = document.body.classList.contains('dark') ? '#111827' : '#ffffff'; grd.addColorStop(0, canvasBg); grd.addColorStop(1, canvasBg);
+    ctx.fillStyle = grd; ctx.fillRect(0,0,W,H);
+
+    // techo
+      ctx.strokeStyle = document.body.classList.contains('dark') ? '#64748b' : '#475569'; ctx.lineWidth=10;
+    ctx.beginPath(); ctx.moveTo(40,60); ctx.lineTo(W-40,60); ctx.stroke();
+
+    // soporte
+      ctx.lineWidth=6; ctx.beginPath(); ctx.moveTo(cx(),60); ctx.lineTo(cx(), cy()-pulleyR); ctx.strokeStyle=document.body.classList.contains('dark') ? '#64748b' : '#475569'; ctx.stroke();
+
+    // polea
+    ctx.fillStyle=document.body.classList.contains('dark') ? '#1e293b' : '#ffffff'; ctx.strokeStyle='#3b82f6'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(cx(),cy(),pulleyR,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle=document.body.classList.contains('dark') ? '#64748b' : '#475569'; ctx.beginPath(); ctx.arc(cx(),cy(),pulleyR-10,0,Math.PI*2); ctx.stroke();
+
+    // cuerda y bloques
+    const xA = cx()+pulleyR, xB = cx()-pulleyR;
+    const yApix = worldY(s.yA), yBpix = worldY(s.yB);
+
+    // cuerda
+    ctx.strokeStyle=document.body.classList.contains('dark') ? '#cbd5e1' : '#475569'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(xA, cy()); ctx.lineTo(xA, yApix-24); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xB, cy()); ctx.lineTo(xB, yBpix-24); ctx.stroke();
+
+    // bloques
+    drawBlock(xB, yBpix-24, 86, 48, '#22d3ee', 'B');
+    drawBlock(xA, yApix-24, 86, 48, '#60a5fa', 'A');
+
+    // vectores de fuerzas
+    if (showVectors.checked){
+      const sPix = s.vecScale;
+      const WB = s.mB*s.g, WA = s.mA*s.g;
+      arrow(xB, yBpix, xB, yBpix + WB*sPix, '#fca5a5', 2.4);
+      arrow(xA, yApix, xA, yApix + WA*sPix, '#fca5a5', 2.4);
+      arrow(xB, yBpix, xB, yBpix - s.T*sPix, '#6ee7a8', 2.4);
+      arrow(xA, yApix, xA, yApix - s.T*sPix, '#6ee7a8', 2.4);
+      ctx.fillStyle=document.body.classList.contains('dark') ? '#cbd5e1' : '#475569'; ctx.font='12px Arial';
+      ctx.fillText('T (verde)   Peso (rojo)', 16, H-18);
+    }
+
+    if(s.mode === 'ruler'){
+      drawRuler(90, cy()-10, worldY(s.L), worldY(s.rulerZero), yApix);
+      measureOut.textContent = Math.abs(s.yA - s.rulerZero).toFixed(3);
+    } else {
+      drawStopMark(xA+80, s.stopMark);
+      stopOut.textContent = s.stopMark.toFixed(3);
+      measureOut.textContent = Math.abs(s.yA - s.rulerZero).toFixed(3);
+    }
+
+    timeOut.textContent = s.time.toFixed(2);
+  }
+
+  // ------- animaci&oacute;n (consistente) -------
+  let lastTS=0;
+  function step(ts){
+    if(!s.playing){ draw(); return; }
+    if(!lastTS) lastTS = ts;
+    let dt = (ts - lastTS)/1000; // segundos reales
+    lastTS = ts;
+
+    // Reducir la velocidad percibida sin cambiar el modelo
+    dt *= s.speed; // 0.1..1.0
+
+    // CONVENCI&Oacute;N: v>0 => A baja (derecha). a puede ser positiva o negativa.
+    // Integraci&oacute;n expl&iacute;cita: primero velocidad, luego posiciones con restricci&oacute;n de cuerda.
+    s.v += s.a * dt;
+    const dy = s.v * dt;
+    s.yA += dy;
+    s.yB -= dy;
+
+    if(s.mode === 'stopmark' && !s.stopTriggered){
+      const traveled = Math.abs(s.yA - s.yA0);
+      const reached = s.stopReference === 'absolute'
+        ? (s.a >= 0 ? s.yA >= s.stopMark : s.yA <= s.stopMark)
+        : traveled >= s.stopMark;
+
+      if(reached){
+        const prevYA = s.yA - dy;
+        let alpha = 1;
+        if(s.stopReference === 'absolute'){
+          const denom = (s.yA - prevYA);
+          alpha = Math.abs(denom) > 1e-12 ? (s.stopMark - prevYA) / denom : 1;
+        } else {
+          const prevTravel = Math.abs(prevYA - s.yA0);
+          const denom = (traveled - prevTravel);
+          alpha = Math.abs(denom) > 1e-12 ? (s.stopMark - prevTravel) / denom : 1;
+        }
+        alpha = Math.max(0, Math.min(1, alpha));
+        const correctedDy = dy * alpha;
+        s.yA = prevYA + correctedDy;
+        s.yB = (s.yB + dy) - correctedDy;
+        s.playing = false;
+        s.stopTriggered = true;
+        s.v = 0;
+      }
+    }
+
+    const yMin = 0.25, yMax = s.L - 0.25;
+    if (s.yA < yMin){ s.yA = yMin; s.yB = s.L - yMin; s.v = 0; }
+    if (s.yA > yMax){ s.yA = yMax; s.yB = s.L - yMax; s.v = 0; }
+    if (s.yB < yMin){ s.yB = yMin; s.yA = s.L - yMin; s.v = 0; }
+    if (s.yB > yMax){ s.yB = yMax; s.yA = s.L - yMax; s.v = 0; }
+
+    s.time += dt;
+
+    if(!s.playing){
+      btnPlay.textContent = 'Reanudar';
+    }
+    draw();
+    requestAnimationFrame(step);
+  }
+
+  // ------- controles -------
+  btnPlay.addEventListener('click', ()=>{ s.playing = true; s.stopTriggered = false; lastTS = 0; requestAnimationFrame(step); });
+  btnPause.addEventListener('click', ()=>{ s.playing=false; });
+  btnReset.addEventListener('click', ()=>{
+    s.playing=false; s.time=0; s.v=0; s.yA=1.5; s.yB=1.5; s.yA0=1.5; s.yB0=1.5; s.stopTriggered=false; lastTS=0; solve(); draw();
+    btnPlay.textContent = 'Simular';
+  });
+
+  // recalcular cuando cambian par&aacute;metros
+  [gR,gN,mAR,mAN,mBR,mBN,spR,spN,vSR,vSN,rulerZeroRange,rulerZeroNum,stopMarkRange,stopMarkNum].forEach(el=>{
+    el.addEventListener('input', ()=>{
+      s.time=0; s.v=0; s.stopTriggered=false; stopOut.textContent = s.stopMark.toFixed(3);
+    });
+  });
+
+  // ------- init -------
+  function init(){ resize(); solve(); draw();
+    rulerBox.style.display = 'block';
+    stopBox.style.display = 'none';
+    (function idle(){ draw(); requestAnimationFrame(idle); })();
+  }
+  init();
+})();
+</script>
+
+
+
+<section class="instructions sim-instructions" aria-label="Instrucciones de la pr&aacute;ctica">
+  <h3>Instrucciones</h3>
+  <ul>
+    <li>Ajusta los par&aacute;metros desde el panel de controles.</li>
+    <li>Observa la respuesta del simulador y compara los resultados.</li>
+    <li>Usa las herramientas de exportaci&oacute;n cuando la pr&aacute;ctica las incluya.</li>
+  </ul>
+</section>
+<footer class="sim-footer">
+  &copy; 2026 Simuladores de F&iacute;sica &mdash; Desarrollado por <strong>MSc. Jorge Chimarro Alvear</strong>
+</footer>
+<script src="../../assets/js/simulator-theme.js"></script>
+</body>
+</html>

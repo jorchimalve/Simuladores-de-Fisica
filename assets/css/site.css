@@ -1,0 +1,129 @@
+:root {
+  color-scheme: light;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #111827;
+  background: #eef2f7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.site-header {
+  color: #ffffff;
+  background: #111827;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.site-header > div,
+.site-main {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.site-header > div {
+  padding: 42px 0 34px;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1;
+}
+
+.intro {
+  max-width: 760px;
+  margin: 16px 0 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 1.05rem;
+}
+
+.site-main {
+  padding: 24px 0 48px;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 18px;
+  color: #475569;
+}
+
+.toolbar a {
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.simulator-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.simulator-card {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  color: inherit;
+  background: #ffffff;
+  text-decoration: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.simulator-card:hover,
+.simulator-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: #2563eb;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+  outline: none;
+}
+
+.simulator-card span {
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #2563eb;
+  background: #eaf1ff;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.simulator-card strong {
+  display: block;
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+.simulator-card small {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 620px) {
+  .toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

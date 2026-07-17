@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Regresi&oacute;n lineal por m&iacute;nimos cuadrados</title>
+  
+  <meta name="description" content="Ajusta datos experimentales, calcula pendiente e intercepto e interpreta el coeficiente R&sup2;.">
+
+  
+  <link rel="stylesheet" href="../../assets/css/simulator-base.css">
+</head>
+<body>
+<header class="sim-header">
+  <div class="sim-title-group">
+    <h1>Regresi&oacute;n lineal por m&iacute;nimos cuadrados</h1>
+    <p class="sim-subtitle">Ajusta datos experimentales, calcula pendiente e intercepto e interpreta el coeficiente R&sup2;.</p>
+  </div>
+  <label class="theme-toggle">
+    <span>Modo oscuro</span>
+    <input type="checkbox" id="themeSwitch">
+  </label>
+</header>
+
+
+  
+
+  <div class="container">
+    <!-- Panel de gr&aacute;fico -->
+    <section class="panel controls" aria-label="Controles de regresi&oacute;n lineal">
+      <h2>Datos de entrada</h2>
+
+      <h3>Ingreso manual</h3>
+      <div class="row">
+        <label for="xInput">Valores de X</label>
+        <textarea id="xInput" placeholder="Ejemplo: 1, 2, 3, 4&#10;o en l&iacute;neas:&#10;1&#10;2&#10;3&#10;4"></textarea>
+      </div>
+      <div class="row">
+        <label for="yInput">Valores de Y</label>
+        <textarea id="yInput" placeholder="Ejemplo: 2.1, 2.9, 4.2, 4.9&#10;Debe tener la misma cantidad de datos que X."></textarea>
+      </div>
+
+      <h3>Carga desde archivo</h3>
+      <div class="row">
+        <label for="fileInput">Archivo CSV / TXT (dos columnas: x,y)</label>
+        <input id="fileInput" type="file" accept=".csv,.txt" />
+        <p class="hint">Formato sugerido: primera fila opcional de encabezado, separador coma o punto y coma. Ej: <code>x,y</code> en la primera l&iacute;nea.</p>
+      </div>
+
+      <div class="switch">
+        <input type="checkbox" id="headerToggle" checked />
+        <label for="headerToggle">Ignorar primera fila como encabezado</label>
+      </div>
+
+      <div class="buttons">
+  <button id="btnCalc" class="primary">Simular</button>
+  <button id="btnClear">Limpiar datos</button>
+  <button data-fit-view>Ajustar vista</button>
+  <button id="btnExport" class="danger">Descargar CSV</button>
+</div>
+
+      <div id="alertBox" class="alert"></div>
+
+      <div class="equation" id="equationBox">
+        Ecuaci&oacute;n de la recta ajustada: <code>y = -</code>
+      </div>
+
+      <div class="stats stats-wide">
+        <div class="card">
+          <span>Pendiente (m)</span>
+          <strong id="mOut">-</strong>
+        </div>
+        <div class="card">
+          <span>Intercepto (b)</span>
+          <strong id="bOut">-</strong>
+        </div>
+        <div class="card">
+          <span>Coeficiente de determinaci&oacute;n R&sup2;</span>
+          <strong id="r2Out">-</strong>
+        </div>
+      </div>
+
+      <div class="stats" style="margin-top:10px;">
+        <div class="card">
+          <span>N&uacute;mero de puntos (n)</span>
+          <strong id="nOut">-</strong>
+        </div>
+        <div class="card">
+          <span>Rango de X</span>
+          <strong id="rangeXOut">-</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel de gr&aacute;fico -->
+    <section class="panel canvas-wrap" aria-label="Gr&aacute;fico de dispersi&oacute;n y recta de regresi&oacute;n">
+      <div class="legend">        &bull; Puntos de datos (X,Y)<br>
+        &bull; Recta de regresi&oacute;n
+      </div>
+      <canvas id="cv"></canvas>
+    </section>
+  </div>
+
+  <div class="footer">
+    Consejo: combina la carga de archivo con peque&ntilde;os ajustes manuales para realizar an&aacute;lisis exploratorios en tiempo real.
+    Desarrollado por <strong>MSc. Jorge Chimarro Alvear</strong> - Simulador de Regresi&oacute;n Lineal por M&iacute;nimos Cuadrados
+  </div>
+
+  <script>
+    // ---------- Helpers de DOM ----------
+    const $ = (sel) => document.querySelector(sel);
+
+    const xInput = $('#xInput');
+    const yInput = $('#yInput');
+    const fileInput = $('#fileInput');
+    const headerToggle = $('#headerToggle');
+    const btnCalc = $('#btnCalc');
+    const btnClear = $('#btnClear');
+    const btnExport = $('#btnExport');
+    const alertBox = $('#alertBox');
+
+    const mOut = $('#mOut');
+    const bOut = $('#bOut');
+    const r2Out = $('#r2Out');
+    const nOut = $('#nOut');
+    const rangeXOut = $('#rangeXOut');
+    const equationBox = $('#equationBox');
+
+    const cv = $('#cv');
+    const ctx = cv.getContext('2d');
+
+    let w, h;
+    const margin = { l:50, r:20, t:20, b:40 };
+    let dataX = [];
+    let dataY = [];
+    let lastModel = null; // {m,b,r2}
+
+    // ---------- Resize / canvas ----------
+    function resize() {
+      const rect = cv.parentElement.getBoundingClientRect();
+      w = Math.max(320, Math.floor(rect.width));
+      h = Math.max(260, Math.floor(rect.height));
+      const dpr = window.devicePixelRatio || 1;
+      cv.width = Math.floor(w * dpr);
+      cv.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawChart();
+    }
+    window.addEventListener('resize', resize);
+
+    // ---------- Parsing de series ----------
+    function parseSeries(text) {
+      if (!text) return [];
+      const raw = text
+        .split(/[\s,;]+/g)
+        .map(v => v.trim())
+        .filter(v => v.length > 0);
+      const nums = raw.map(v => Number(v.replace(',', '.')));
+      for (let i = 0; i < nums.length; i++) {
+        if (!Number.isFinite(nums[i])) {
+          throw new Error(`Dato no numérico en la posición ${i + 1}`);
+        }
+      }
+      return nums;
+    }
+
+    // ---------- Carga de archivo ----------
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const text = e.target.result;
+          const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+          if (lines.length === 0) throw new Error('El archivo está vacío.');
+          let start = 0;
+          if (headerToggle.checked) start = 1;
+          const xs = [];
+          const ys = [];
+          for (let i = start; i < lines.length; i++) {
+            const line = lines[i];
+            const parts = line.split(/[,;]+/).map(p => p.trim());
+            if (parts.length < 2) continue;
+            const x = Number(parts[0].replace(',', '.'));
+            const y = Number(parts[1].replace(',', '.'));
+            if (!Number.isFinite(x) || !Number.isFinite(y)) {
+              throw new Error(`Dato no numérico en la línea ${i + 1}`);
+            }
+            xs.push(x);
+            ys.push(y);
+          }
+          if (xs.length < 2) {
+            throw new Error('Se requieren al menos 2 pares (x,y) válidos en el archivo.');
+          }
+          dataX = xs;
+          dataY = ys;
+          // Refrescar textareas para que el usuario vea lo cargado
+          xInput.value = xs.join(', ');
+          yInput.value = ys.join(', ');
+          showAlert(`Archivo cargado correctamente con ${xs.length} puntos.`, 'info');
+          computeAndRender();
+        } catch (err) {
+          showAlert(err.message || 'Error al procesar el archivo.', 'error');
+        }
+      };
+      reader.onerror = () => {
+        showAlert('No se pudo leer el archivo.', 'error');
+      };
+      reader.readAsText(file);
+    });
+
+    // ---------- Cálculo de regresión ----------
+    function computeRegression(xs, ys) {
+      const n = xs.length;
+      if (n !== ys.length) throw new Error('X e Y deben tener la misma cantidad de datos.');
+      if (n < 2) throw new Error('Se requieren al menos 2 puntos para la regresión.');
+      let sumX = 0, sumY = 0;
+      for (let i = 0; i < n; i++) {
+        if (!Number.isFinite(xs[i]) || !Number.isFinite(ys[i])) {
+          throw new Error(`Datos no numéricos encontrados.`);
+        }
+        sumX += xs[i];
+        sumY += ys[i];
+      }
+      const meanX = sumX / n;
+      const meanY = sumY / n;
+
+      let Sxx = 0, Sxy = 0, SStot = 0, SSres = 0;
+      for (let i = 0; i < n; i++) {
+        const dx = xs[i] - meanX;
+        const dy = ys[i] - meanY;
+        Sxx += dx * dx;
+        Sxy += dx * dy;
+      }
+      if (Sxx === 0) throw new Error('La varianza de X es cero. No se puede ajustar una recta.');
+
+      const m = Sxy / Sxx;
+      const b = meanY - m * meanX;
+
+      for (let i = 0; i < n; i++) {
+        const yPred = m * xs[i] + b;
+        const dy = ys[i] - meanY;
+        const res = ys[i] - yPred;
+        SStot += dy * dy;
+        SSres += res * res;
+      }
+      const r2 = (SStot === 0) ? 1 : 1 - SSres / SStot;
+      return { m, b, r2, meanX, meanY };
+    }
+
+    // ---------- Formateo de ecuación ----------
+    function formatEquation(m, b) {
+      const mStr = m.toFixed(4);
+      const bAbs = Math.abs(b);
+      const bStr = bAbs.toFixed(4);
+      const sign = (b >= 0) ? '+' : '-';
+      return `y = ${mStr}·x ${sign} ${bStr}`;
+    }
+
+    // ---------- Alertas ----------
+    function showAlert(msg, type = 'error') {
+      alertBox.textContent = msg;
+      alertBox.classList.add('visible');
+      alertBox.style.borderColor = (type === 'error') ? '#f97373' : '#2aa6d1';
+      alertBox.style.color = (type === 'error') ? '#fca5a5' : '#7ee0ff';
+    }
+
+    function clearAlert() {
+      alertBox.textContent = '';
+      alertBox.classList.remove('visible');
+    }
+
+    // ---------- Botones principales ----------
+    btnCalc.addEventListener('click', () => {
+      try {
+        clearAlert();
+        dataX = parseSeries(xInput.value);
+        dataY = parseSeries(yInput.value);
+        computeAndRender();
+      } catch (err) {
+        showAlert(err.message || 'Error al procesar los datos.', 'error');
+      }
+    });
+
+    btnClear.addEventListener('click', () => {
+      dataX = [];
+      dataY = [];
+      xInput.value = '';
+      yInput.value = '';
+      lastModel = null;
+      clearAlert();
+      mOut.textContent = '-';
+      bOut.textContent = '-';
+      r2Out.textContent = '-';
+      nOut.textContent = '-';
+      rangeXOut.textContent = '-';
+      equationBox.innerHTML = 'Ecuaci&oacute;n de la recta ajustada: <code>y = -</code>';
+      drawChart();
+    });
+
+    btnExport.addEventListener('click', () => {
+      try {
+        if (!dataX.length || !lastModel) {
+          showAlert('No hay resultados para exportar. Calcula la regresión primero.', 'error');
+          return;
+        }
+        const { m, b } = lastModel;
+        const rows = ['x,y,y_pred,residuo'];
+        for (let i = 0; i < dataX.length; i++) {
+          const x = dataX[i];
+          const y = dataY[i];
+          const yPred = m * x + b;
+          const res = y - yPred;
+          rows.push(`${x},${y},${yPred.toFixed(6)},${res.toFixed(6)}`);
+        }
+        const csv = rows.join('\n');
+        const blob = new Blob([csv], { type:'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'regresion_lineal_resultados.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        showAlert('No se pudo exportar el CSV.', 'error');
+      }
+    });
+
+    // ---------- Cálculo + actualización UI ----------
+    function computeAndRender() {
+      const xs = dataX;
+      const ys = dataY;
+      if (!xs.length || !ys.length) throw new Error('Debe ingresar datos en X y Y.');
+      const model = computeRegression(xs, ys);
+      lastModel = model;
+
+      const { m, b, r2 } = model;
+      mOut.textContent = m.toFixed(4);
+      bOut.textContent = b.toFixed(4);
+      r2Out.textContent = r2.toFixed(4);
+      nOut.textContent = xs.length;
+
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      rangeXOut.textContent = `${minX.toFixed(2)} - ${maxX.toFixed(2)}`;
+
+      equationBox.innerHTML = 'Ecuaci&oacute;n de la recta ajustada: <code>' + formatEquation(m, b) + '</code>';
+
+      drawChart();
+    }
+
+    // ---------- Gráfico ----------
+    function drawBackground() {
+      const grd = ctx.createLinearGradient(0, 0, 0, h);
+      const canvasBg = document.body.classList.contains('dark') ? '#111827' : '#ffffff';
+      grd.addColorStop(0, canvasBg);
+      grd.addColorStop(1, canvasBg);
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    function drawAxes(xMin, xMax, yMin, yMax) {
+      const dark = document.body.classList.contains('dark');
+      const axisColor = dark ? '#94a3b8' : '#374151';
+      const gridColor = dark ? 'rgba(148,163,184,.24)' : 'rgba(51,65,85,.25)';
+      const textColor = dark ? '#f1f5f9' : '#111827';
+      ctx.save();
+      ctx.strokeStyle = axisColor;
+      ctx.lineWidth = 1;
+
+      // Eje X
+      const y0 = Math.min(Math.max(0, yMin), yMax); // por si 0 está fuera del rango
+      const p0 = worldToCanvas(xMin, y0, xMin, xMax, yMin, yMax);
+      const p1 = worldToCanvas(xMax, y0, xMin, xMax, yMin, yMax);
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.stroke();
+
+      // Eje Y
+      const x0 = Math.min(Math.max(0, xMin), xMax);
+      const q0 = worldToCanvas(x0, yMin, xMin, xMax, yMin, yMax);
+      const q1 = worldToCanvas(x0, yMax, xMin, xMax, yMin, yMax);
+      ctx.beginPath();
+      ctx.moveTo(q0.x, q0.y);
+      ctx.lineTo(q1.x, q1.y);
+      ctx.stroke();
+
+      // Ticks
+      ctx.fillStyle = textColor;
+      ctx.font = '11px Arial';
+
+      const xRange = xMax - xMin;
+      const yRange = yMax - yMin;
+      const xStep = niceStep(xRange / 6);
+      const yStep = niceStep(yRange / 6);
+
+      ctx.save();
+      ctx.strokeStyle = gridColor;
+      ctx.lineWidth = 1;
+      for (let xv = Math.ceil(xMin / xStep) * xStep; xv <= xMax + 1e-9; xv += xStep) {
+        const p = worldToCanvas(xv, y0, xMin, xMax, yMin, yMax);
+        ctx.beginPath();
+        ctx.moveTo(p.x, margin.t);
+        ctx.lineTo(p.x, h - margin.b);
+        ctx.stroke();
+      }
+      for (let yv = Math.ceil(yMin / yStep) * yStep; yv <= yMax + 1e-9; yv += yStep) {
+        const p = worldToCanvas(x0, yv, xMin, xMax, yMin, yMax);
+        ctx.beginPath();
+        ctx.moveTo(margin.l, p.y);
+        ctx.lineTo(w - margin.r, p.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.strokeStyle = axisColor;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.moveTo(q0.x, q0.y);
+      ctx.lineTo(q1.x, q1.y);
+      ctx.stroke();
+
+      for (let xv = Math.ceil(xMin / xStep) * xStep; xv <= xMax + 1e-9; xv += xStep) {
+        const p = worldToCanvas(xv, y0, xMin, xMax, yMin, yMax);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p0.y - 3);
+        ctx.lineTo(p.x, p0.y + 3);
+        ctx.stroke();
+        ctx.fillText(xv.toFixed(1), p.x - 8, p0.y + 14);
+      }
+
+      for (let yv = Math.ceil(yMin / yStep) * yStep; yv <= yMax + 1e-9; yv += yStep) {
+        const p = worldToCanvas(x0, yv, xMin, xMax, yMin, yMax);
+        ctx.beginPath();
+        ctx.moveTo(q0.x - 3, p.y);
+        ctx.lineTo(q0.x + 3, p.y);
+        ctx.stroke();
+        ctx.fillText(yv.toFixed(1), q0.x - 32, p.y + 4);
+      }
+
+      ctx.restore();
+    }
+
+    function niceStep(raw) {
+      if (!Number.isFinite(raw) || raw <= 0) return 1;
+      const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+      const n = raw / pow;
+      let step;
+      if (n > 5) step = 10;
+      else if (n > 2) step = 5;
+      else if (n > 1) step = 2;
+      else step = 1;
+      return step * pow;
+    }
+
+    function worldToCanvas(x, y, xMin, xMax, yMin, yMax) {
+      const plotW = w - margin.l - margin.r;
+      const plotH = h - margin.t - margin.b;
+      const sx = plotW / (xMax - xMin || 1);
+      const sy = plotH / (yMax - yMin || 1);
+      const cx = margin.l + (x - xMin) * sx;
+      const cy = h - margin.b - (y - yMin) * sy;
+      return { x: cx, y: cy };
+    }
+
+    function drawChart() {
+      drawBackground();
+
+      if (!dataX.length || !dataY.length || dataX.length !== dataY.length) {
+        // Nada que graficar, solo fondo
+        return;
+      }
+
+      const xs = dataX;
+      const ys = dataY;
+      let xMin = Math.min(...xs);
+      let xMax = Math.max(...xs);
+      let yMin = Math.min(...ys);
+      let yMax = Math.max(...ys);
+
+      if (lastModel) {
+        const { m, b } = lastModel;
+        const y1 = m * xMin + b;
+        const y2 = m * xMax + b;
+        yMin = Math.min(yMin, y1, y2);
+        yMax = Math.max(yMax, y1, y2);
+      }
+
+      // Añadir margen visual de 10%
+      const padX = (xMax - xMin || 1) * 0.1;
+      const padY = (yMax - yMin || 1) * 0.1;
+      xMin -= padX;
+      xMax += padX;
+      yMin -= padY;
+      yMax += padY;
+
+      drawAxes(xMin, xMax, yMin, yMax);
+
+      // Puntos
+      ctx.save();
+      ctx.fillStyle = document.body.classList.contains('dark') ? '#ef4444' : '#b91c1c';
+      for (let i = 0; i < xs.length; i++) {
+        const p = worldToCanvas(xs[i], ys[i], xMin, xMax, yMin, yMax);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      if (lastModel) {
+        const { m, b } = lastModel;
+        const y1 = m * xMin + b;
+        const y2 = m * xMax + b;
+        const p1 = worldToCanvas(xMin, y1, xMin, xMax, yMin, yMax);
+        const p2 = worldToCanvas(xMax, y2, xMin, xMax, yMin, yMax);
+        ctx.save();
+        ctx.strokeStyle = document.body.classList.contains('dark') ? '#3b82f6' : '#1d4ed8';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // ---------- Inicializaci&oacute;n ----------
+    resize();
+  </script>
+
+
+
+<section class="instructions sim-instructions" aria-label="Instrucciones de la pr&aacute;ctica">
+  <h3>Instrucciones</h3>
+  <ul>
+    <li>Ajusta los par&aacute;metros desde el panel de controles.</li>
+    <li>Observa la respuesta del simulador y compara los resultados.</li>
+    <li>Usa las herramientas de exportaci&oacute;n cuando la pr&aacute;ctica las incluya.</li>
+  </ul>
+</section>
+<footer class="sim-footer">
+  &copy; 2026 Simuladores de F&iacute;sica &mdash; Desarrollado por <strong>MSc. Jorge Chimarro Alvear</strong>
+</footer>
+<script src="../../assets/js/simulator-theme.js"></script>
+</body>
+</html>

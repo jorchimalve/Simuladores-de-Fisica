@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Plantilla base - Simulador de física</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Plantilla base</p>
+        <h1>Nombre del simulador</h1>
+        <p>Descripción breve del fenómeno físico.</p>
+      </div>
+      <button type="button" id="themeButton" aria-pressed="false">Modo oscuro</button>
+    </header>
+
+    <main class="layout">
+      <section class="panel controls" aria-labelledby="controlsTitle">
+        <h2 id="controlsTitle">Controles</h2>
+
+        <label>
+          Parámetro
+          <input id="parameterInput" type="range" min="0" max="100" value="50">
+        </label>
+
+        <output id="parameterValue" for="parameterInput">50</output>
+
+        <div class="button-row">
+          <button type="button" id="startButton">Iniciar</button>
+          <button type="button" id="resetButton">Reiniciar</button>
+        </div>
+      </section>
+
+      <section class="panel workspace" aria-label="Área del simulador">
+        <canvas id="simulationCanvas" width="1000" height="560"></canvas>
+      </section>
+
+      <section class="panel notes" aria-labelledby="notesTitle">
+        <h2 id="notesTitle">Instrucciones</h2>
+        <ul>
+          <li>Ajusta los parámetros.</li>
+          <li>Ejecuta la simulación.</li>
+          <li>Observa los resultados y registra los datos importantes.</li>
+        </ul>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

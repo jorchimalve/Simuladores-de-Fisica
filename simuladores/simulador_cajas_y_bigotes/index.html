@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diagrama de cajas y bigotes</title>
+  
+  <meta name="description" content="Interpreta mediana, cuartiles, dispersi&oacute;n y valores at&iacute;picos en datos experimentales.">
+
+  
+  <link rel="stylesheet" href="../../assets/css/simulator-base.css">
+</head>
+<body>
+<header class="sim-header">
+  <div class="sim-title-group">
+    <h1>Diagrama de cajas y bigotes</h1>
+    <p class="sim-subtitle">Interpreta mediana, cuartiles, dispersi&oacute;n y valores at&iacute;picos en datos experimentales.</p>
+  </div>
+  <label class="theme-toggle">
+    <span>Modo oscuro</span>
+    <input type="checkbox" id="themeSwitch">
+  </label>
+</header>
+
+
+  
+
+  <div class="container">
+    <section class="panel controls">
+      <h2>Datos de entrada</h2>
+
+      <h3>Ingreso manual</h3>
+      <div class="row">
+        <label for="dataInput">Valores num&eacute;ricos</label>
+        <textarea id="dataInput" placeholder="Ejemplo:
+12, 15, 14, 18, 19, 12, 11, 17, 13, 16, 18, 19, 10"></textarea>
+      </div>
+
+      <h3>Carga desde archivo</h3>
+      <div class="row">
+        <label for="fileInput">Archivo CSV / TXT</label>
+        <input id="fileInput" type="file" accept=".csv,.txt" />
+        <p class="hint">Puedes usar comas, punto y coma, espacios o saltos de l&iacute;nea. El sistema extrae todos los valores num&eacute;ricos.</p>
+      </div>
+
+      <div class="switch">
+        <input type="checkbox" id="showMean" checked />
+        <label for="showMean">Mostrar media</label>
+      </div>
+
+      <div class="switch">
+        <input type="checkbox" id="showOutliers" checked />
+        <label for="showOutliers">Mostrar valores at&iacute;picos</label>
+      </div>
+
+      <div class="buttons">
+  <button id="btnCalc" class="primary">Simular</button>
+  <button id="btnClear">Limpiar</button>
+  <button data-fit-view>Ajustar vista</button>
+  <button id="btnExportSummary">Descargar CSV resumen</button>
+  <button id="btnExportSorted" class="danger">Descargar CSV datos</button>
+</div>
+
+      <div id="alertBox" class="alert"></div>
+
+      <div class="stats stats-wide">
+        <div class="card"><span>N</span><strong id="nOut">-</strong></div>
+        <div class="card"><span>Media</span><strong id="meanOut">-</strong></div>
+        <div class="card"><span>Mediana</span><strong id="medianOut">-</strong></div>
+      </div>
+
+      <div class="stats stats-wide">
+        <div class="card"><span>Q1</span><strong id="q1Out">-</strong></div>
+        <div class="card"><span>Q3</span><strong id="q3Out">-</strong></div>
+        <div class="card"><span>IQR</span><strong id="iqrOut">-</strong></div>
+      </div>
+
+      <div class="stats">
+        <div class="card"><span>M&iacute;nimo</span><strong id="minOut">-</strong></div>
+        <div class="card"><span>M&aacute;ximo</span><strong id="maxOut">-</strong></div>
+      </div>
+
+      <div class="stats">
+        <div class="card"><span>Bigote inferior</span><strong id="lowWhiskerOut">-</strong></div>
+        <div class="card"><span>Bigote superior</span><strong id="highWhiskerOut">-</strong></div>
+      </div>
+
+      <div class="stats">
+        <div class="card"><span>At&iacute;picos</span><strong id="outliersOut">-</strong></div>
+        <div class="card"><span>Rango</span><strong id="rangeOut">-</strong></div>
+      </div>
+    </section>
+
+    <section class="panel canvas-wrap">
+      <div class="legend">
+        Caja = Q1 a Q3<br>
+        L&iacute;nea central = mediana<br>
+        Punto blanco = media<br>
+        Bigotes = valores no at&iacute;picos extremos<br>
+        Puntos rosas = valores at&iacute;picos<br>
+        Eje horizontal = escala de los datos
+      </div>
+      <canvas id="cv"></canvas>
+    </section>
+  </div>
+
+  <div class="footer">
+    Precisi&oacute;n controlada: m&aacute;ximo 3 decimales. Sin inflaci-n decimal, sin fake precision.
+  </div>
+
+  <script>
+    const $ = (sel) => document.querySelector(sel);
+
+    const dataInput = $('#dataInput');
+    const fileInput = $('#fileInput');
+    const showMean = $('#showMean');
+    const showOutliers = $('#showOutliers');
+    const btnCalc = $('#btnCalc');
+    const btnClear = $('#btnClear');
+    const btnExportSummary = $('#btnExportSummary');
+    const btnExportSorted = $('#btnExportSorted');
+    const alertBox = $('#alertBox');
+
+    const nOut = $('#nOut');
+    const meanOut = $('#meanOut');
+    const medianOut = $('#medianOut');
+    const q1Out = $('#q1Out');
+    const q3Out = $('#q3Out');
+    const iqrOut = $('#iqrOut');
+    const minOut = $('#minOut');
+    const maxOut = $('#maxOut');
+    const lowWhiskerOut = $('#lowWhiskerOut');
+    const highWhiskerOut = $('#highWhiskerOut');
+    const outliersOut = $('#outliersOut');
+    const rangeOut = $('#rangeOut');
+
+    const cv = $('#cv');
+    const ctx = cv.getContext('2d');
+
+    let w, h;
+    const margin = { l: 70, r: 40, t: 70, b: 80 };
+    let currentStats = null;
+    let currentData = [];
+
+    function resize() {
+      const rect = cv.parentElement.getBoundingClientRect();
+      w = Math.max(320, Math.floor(rect.width));
+      h = Math.max(320, Math.floor(rect.height));
+      const dpr = window.devicePixelRatio || 1;
+      cv.width = Math.floor(w * dpr);
+      cv.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawChart();
+    }
+    window.addEventListener('resize', resize);
+
+    function showAlert(msg, type = 'error') {
+      alertBox.textContent = msg;
+      alertBox.classList.add('visible');
+      alertBox.style.borderColor = (type === 'error') ? '#f97373' : '#2aa6d1';
+      alertBox.style.color = (type === 'error') ? '#fca5a5' : '#7ee0ff';
+    }
+
+    function clearAlert() {
+      alertBox.textContent = '';
+      alertBox.classList.remove('visible');
+    }
+
+    function parseNumbers(text) {
+      if (!text || !text.trim()) return [];
+      const matches = text.match(/-?\d+(?:[.,]\d+)?/g);
+      if (!matches) return [];
+      return matches.map(v => Number(v.replace(',', '.'))).filter(v => Number.isFinite(v));
+    }
+
+    function medianOf(arr) {
+      const n = arr.length;
+      if (n === 0) return NaN;
+      const mid = Math.floor(n / 2);
+      return n % 2 === 0 ? (arr[mid - 1] + arr[mid]) / 2 : arr[mid];
+    }
+
+    function quartiles(sorted) {
+      const n = sorted.length;
+      const med = medianOf(sorted);
+
+      let lower, upper;
+      if (n % 2 === 0) {
+        lower = sorted.slice(0, n / 2);
+        upper = sorted.slice(n / 2);
+      } else {
+        lower = sorted.slice(0, Math.floor(n / 2));
+        upper = sorted.slice(Math.floor(n / 2) + 1);
+      }
+
+      return {
+        q1: medianOf(lower.length ? lower : sorted),
+        median: med,
+        q3: medianOf(upper.length ? upper : sorted)
+      };
+    }
+
+    function computeStats(data) {
+      if (!data || data.length < 3) {
+        throw new Error('Se requieren al menos 3 datos para construir el gráfico de cajas y bigotes.');
+      }
+
+      const sorted = [...data].sort((a, b) => a - b);
+      const n = sorted.length;
+      const min = sorted[0];
+      const max = sorted[n - 1];
+      const mean = sorted.reduce((acc, val) => acc + val, 0) / n;
+      const { q1, median, q3 } = quartiles(sorted);
+      const iqr = q3 - q1;
+
+      const lowerFence = q1 - 1.5 * iqr;
+      const upperFence = q3 + 1.5 * iqr;
+
+      const nonOutliers = sorted.filter(v => v >= lowerFence && v <= upperFence);
+      const outliers = sorted.filter(v => v < lowerFence || v > upperFence);
+
+      return {
+        sorted,
+        n,
+        min,
+        max,
+        mean,
+        q1,
+        median,
+        q3,
+        iqr,
+        range: max - min,
+        lowerFence,
+        upperFence,
+        lowWhisker: nonOutliers[0],
+        highWhisker: nonOutliers[nonOutliers.length - 1],
+        outliers
+      };
+    }
+
+    function decimalsNeededForDistinct(values, start = 2, max = 3) {
+      for (let d = start; d <= max; d++) {
+        const formatted = values.map(v => Number(v).toFixed(d));
+        const unique = new Set(formatted);
+        if (unique.size === formatted.length) return d;
+      }
+      return max;
+    }
+
+    function formatSmart(value, decimals = 2) {
+      return Number(value).toFixed(Math.min(decimals, 3));
+    }
+
+    function buildFormatConfig(stats) {
+      const meanMedianDecimals = decimalsNeededForDistinct([stats.mean, stats.median], 2, 3);
+      const qGroupDecimals = decimalsNeededForDistinct(
+        [stats.lowWhisker, stats.q1, stats.median, stats.q3, stats.highWhisker],
+        2,
+        3
+      );
+
+      return {
+        mean: meanMedianDecimals,
+        median: meanMedianDecimals,
+        q1: qGroupDecimals,
+        q3: qGroupDecimals,
+        lowWhisker: qGroupDecimals,
+        highWhisker: qGroupDecimals,
+        min: qGroupDecimals,
+        max: qGroupDecimals,
+        iqr: 2,
+        range: 2
+      };
+    }
+
+    function updateUI(stats) {
+      const fmt = buildFormatConfig(stats);
+
+      nOut.textContent = stats.n;
+      meanOut.textContent = formatSmart(stats.mean, fmt.mean);
+      medianOut.textContent = formatSmart(stats.median, fmt.median);
+      q1Out.textContent = formatSmart(stats.q1, fmt.q1);
+      q3Out.textContent = formatSmart(stats.q3, fmt.q3);
+      iqrOut.textContent = formatSmart(stats.iqr, fmt.iqr);
+      minOut.textContent = formatSmart(stats.min, fmt.min);
+      maxOut.textContent = formatSmart(stats.max, fmt.max);
+      lowWhiskerOut.textContent = formatSmart(stats.lowWhisker, fmt.lowWhisker);
+      highWhiskerOut.textContent = formatSmart(stats.highWhisker, fmt.highWhisker);
+      outliersOut.textContent = stats.outliers.length;
+      rangeOut.textContent = formatSmart(stats.range, fmt.range);
+    }
+
+    function niceStep(raw) {
+      if (!Number.isFinite(raw) || raw <= 0) return 1;
+      const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+      const n = raw / pow;
+      let step;
+      if (n > 5) step = 10;
+      else if (n > 2) step = 5;
+      else if (n > 1) step = 2;
+      else step = 1;
+      return step * pow;
+    }
+
+    function xScale(value, minVal, maxVal) {
+      const plotW = w - margin.l - margin.r;
+      return margin.l + ((value - minVal) / (maxVal - minVal || 1)) * plotW;
+    }
+
+    function drawBackground() {
+      const grd = ctx.createLinearGradient(0, 0, 0, h);
+      const canvasBg = document.body.classList.contains('dark') ? '#111827' : '#ffffff';
+      grd.addColorStop(0, canvasBg);
+      grd.addColorStop(1, canvasBg);
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    function drawAxes(minVal, maxVal) {
+      const yAxis = h - margin.b;
+      const dark = document.body.classList.contains('dark');
+      ctx.save();
+      ctx.strokeStyle = dark ? '#94a3b8' : '#374151';
+      ctx.lineWidth = 1.2;
+
+      ctx.beginPath();
+      ctx.moveTo(margin.l, yAxis);
+      ctx.lineTo(w - margin.r, yAxis);
+      ctx.stroke();
+
+      ctx.fillStyle = dark ? '#f1f5f9' : '#111827';
+      ctx.font = '12px Arial';
+
+      const span = maxVal - minVal || 1;
+      const step = niceStep(span / 8);
+
+      for (let v = Math.ceil(minVal / step) * step; v <= maxVal + 1e-9; v += step) {
+        const x = xScale(v, minVal, maxVal);
+        ctx.save();
+        ctx.strokeStyle = dark ? 'rgba(148,163,184,.24)' : 'rgba(51,65,85,.25)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, margin.t);
+        ctx.lineTo(x, yAxis);
+        ctx.stroke();
+        ctx.restore();
+        ctx.strokeStyle = dark ? '#94a3b8' : '#374151';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(x, yAxis - 5);
+        ctx.lineTo(x, yAxis + 5);
+        ctx.stroke();
+        ctx.fillText(v.toFixed(2), x - 16, yAxis + 20);
+      }
+      ctx.restore();
+    }
+
+    function drawGuide(x1, y1, x2, y2, color = null) {
+      ctx.save();
+      ctx.strokeStyle = color || (document.body.classList.contains('dark') ? '#8b5cf6' : '#7c3aed');
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawLabel(text, x, y, align = 'center', color = null) {
+      ctx.save();
+      ctx.font = 'bold 12px Arial';
+      ctx.textAlign = align;
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = color || (document.body.classList.contains('dark') ? '#f1f5f9' : '#111827');
+      ctx.fillText(text, x, y);
+      ctx.restore();
+    }
+
+    function resolveLabelCollisions(labels, minGap = 64) {
+      const byRow = {};
+      labels.forEach(label => {
+        if (!byRow[label.row]) byRow[label.row] = [];
+        byRow[label.row].push(label);
+      });
+
+      Object.values(byRow).forEach(group => {
+        group.sort((a, b) => a.x - b.x);
+
+        for (let i = 1; i < group.length; i++) {
+          const prev = group[i - 1];
+          const curr = group[i];
+          if ((curr.x + curr.dx) - (prev.x + prev.dx) < minGap) {
+            curr.dx = (prev.x + prev.dx + minGap) - curr.x;
+          }
+        }
+
+        for (let i = group.length - 2; i >= 0; i--) {
+          const next = group[i + 1];
+          const curr = group[i];
+          if ((next.x + next.dx) - (curr.x + curr.dx) < minGap) {
+            curr.dx = (next.x + next.dx - minGap) - curr.x;
+          }
+        }
+
+        group.forEach(label => {
+          const leftLimit = margin.l + 10;
+          const rightLimit = w - margin.r - 10;
+          label.dx = Math.max(leftLimit - label.x, Math.min(label.dx, rightLimit - label.x));
+        });
+      });
+    }
+
+    function drawChart() {
+      drawBackground();
+      if (!currentStats) return;
+
+      const stats = currentStats;
+      const fmt = buildFormatConfig(stats);
+      const dark = document.body.classList.contains('dark');
+      const labelColor = dark ? '#f1f5f9' : '#111827';
+      const secondaryLabel = dark ? '#cbd5e1' : '#374151';
+
+      let minVal = Math.min(stats.min, stats.lowerFence);
+      let maxVal = Math.max(stats.max, stats.upperFence);
+      const pad = (maxVal - minVal || 1) * 0.10;
+      minVal -= pad;
+      maxVal += pad;
+
+      drawAxes(minVal, maxVal);
+
+      const y = h * 0.54;
+      const boxH = 105;
+
+      const xMin = xScale(stats.lowWhisker, minVal, maxVal);
+      const xQ1 = xScale(stats.q1, minVal, maxVal);
+      const xMed = xScale(stats.median, minVal, maxVal);
+      const xQ3 = xScale(stats.q3, minVal, maxVal);
+      const xMax = xScale(stats.highWhisker, minVal, maxVal);
+      const xMean = xScale(stats.mean, minVal, maxVal);
+
+      ctx.save();
+
+      ctx.strokeStyle = dark ? '#60a5fa' : '#1e3a8a';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(xMin, y);
+      ctx.lineTo(xQ1, y);
+      ctx.moveTo(xQ3, y);
+      ctx.lineTo(xMax, y);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(xMin, y - 35);
+      ctx.lineTo(xMin, y + 35);
+      ctx.moveTo(xMax, y - 35);
+      ctx.lineTo(xMax, y + 35);
+      ctx.stroke();
+
+      ctx.fillStyle = dark ? 'rgba(37,99,235,.38)' : 'rgba(37,99,235,.24)';
+      ctx.strokeStyle = dark ? '#3b82f6' : '#2563eb';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.rect(xQ1, y - boxH / 2, xQ3 - xQ1, boxH);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = dark ? '#f87171' : '#dc2626';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(xMed, y - boxH / 2);
+      ctx.lineTo(xMed, y + boxH / 2);
+      ctx.stroke();
+
+      if (showMean.checked) {
+        ctx.fillStyle = dark ? '#8b5cf6' : '#7c3aed';
+        ctx.beginPath();
+        ctx.arc(xMean, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = dark ? '#f1f5f9' : '#111827';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      if (showOutliers.checked && stats.outliers.length) {
+        ctx.fillStyle = dark ? '#ef4444' : '#b91c1c';
+        for (const v of stats.outliers) {
+          const xo = xScale(v, minVal, maxVal);
+          ctx.beginPath();
+          ctx.arc(xo, y, 6, 0, Math.PI * 2);
+          ctx.fill();
+          drawLabel(Number(v).toFixed(2), xo, y + 28, 'center', dark ? '#fecaca' : '#7f1d1d');
+        }
+      }
+
+      ctx.restore();
+
+      const labels = [
+        {
+          key: 'min',
+          text: `Min: ${formatSmart(stats.lowWhisker, fmt.lowWhisker)}`,
+          x: xMin,
+          anchorY: y - 35,
+          labelY: y - 78,
+          row: 'top',
+          color: secondaryLabel,
+          dx: 0
+        },
+        {
+          key: 'q1',
+          text: `Q1: ${formatSmart(stats.q1, fmt.q1)}`,
+          x: xQ1,
+          anchorY: y - boxH / 2,
+          labelY: y - 98,
+          row: 'top',
+          color: labelColor,
+          dx: 0
+        },
+        {
+          key: 'q3',
+          text: `Q3: ${formatSmart(stats.q3, fmt.q3)}`,
+          x: xQ3,
+          anchorY: y - boxH / 2,
+          labelY: y - 98,
+          row: 'top',
+          color: labelColor,
+          dx: 0
+        },
+        {
+          key: 'max',
+          text: `Max: ${formatSmart(stats.highWhisker, fmt.highWhisker)}`,
+          x: xMax,
+          anchorY: y - 35,
+          labelY: y - 78,
+          row: 'top',
+          color: secondaryLabel,
+          dx: 0
+        },
+        {
+          key: 'med',
+          text: `Med: ${formatSmart(stats.median, fmt.median)}`,
+          x: xMed,
+          anchorY: y + boxH / 2,
+          labelY: y + 25,
+          row: 'bottom',
+          color: labelColor,
+          dx: 0
+        }
+      ];
+
+      if (showMean.checked) {
+        labels.push({
+          key: 'mean',
+          text: `Media: ${formatSmart(stats.mean, fmt.mean)}`,
+          x: xMean,
+          anchorY: y + 8,
+          labelY: y + 48,
+          row: 'bottom',
+          color: dark ? '#c4b5fd' : '#5b21b6',
+          dx: 0
+        });
+      }
+
+      resolveLabelCollisions(labels, 68);
+
+      labels.forEach(label => {
+        const lx = label.x + label.dx;
+        drawGuide(label.x, label.anchorY, lx, label.labelY - (label.row === 'top' ? -6 : 6));
+        drawLabel(label.text, lx, label.labelY, 'center', label.color);
+      });
+    }
+
+    function calculateAndRender() {
+      clearAlert();
+      const data = parseNumbers(dataInput.value);
+      if (!data.length) throw new Error('No se encontraron datos numéricos válidos.');
+
+      currentData = data;
+      currentStats = computeStats(data);
+      updateUI(currentStats);
+      drawChart();
+    }
+
+    btnCalc.addEventListener('click', () => {
+      try {
+        calculateAndRender();
+      } catch (err) {
+        showAlert(err.message || 'Error al procesar los datos.', 'error');
+      }
+    });
+
+    btnClear.addEventListener('click', () => {
+      currentStats = null;
+      currentData = [];
+      dataInput.value = '';
+      fileInput.value = '';
+      clearAlert();
+
+      nOut.textContent = '-';
+      meanOut.textContent = '-';
+      medianOut.textContent = '-';
+      q1Out.textContent = '-';
+      q3Out.textContent = '-';
+      iqrOut.textContent = '-';
+      minOut.textContent = '-';
+      maxOut.textContent = '-';
+      lowWhiskerOut.textContent = '-';
+      highWhiskerOut.textContent = '-';
+      outliersOut.textContent = '-';
+      rangeOut.textContent = '-';
+
+      drawChart();
+    });
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const text = e.target.result;
+          const nums = parseNumbers(text);
+          if (!nums.length) throw new Error('El archivo no contiene datos numéricos válidos.');
+          dataInput.value = nums.join(', ');
+          currentData = nums;
+          currentStats = computeStats(nums);
+          updateUI(currentStats);
+          drawChart();
+          showAlert(`Archivo cargado correctamente con ${nums.length} datos.`, 'info');
+        } catch (err) {
+          showAlert(err.message || 'No se pudo procesar el archivo.', 'error');
+        }
+      };
+      reader.onerror = () => showAlert('No se pudo leer el archivo.', 'error');
+      reader.readAsText(file);
+    });
+
+    showMean.addEventListener('change', drawChart);
+    showOutliers.addEventListener('change', drawChart);
+
+    btnExportSummary.addEventListener('click', () => {
+      try {
+        if (!currentStats) {
+          showAlert('Primero genera el gráfico.', 'error');
+          return;
+        }
+
+        const fmt = buildFormatConfig(currentStats);
+        const s = currentStats;
+        const rows = [
+          'Indicador,Valor',
+          `N,${s.n}`,
+          `Media,${formatSmart(s.mean, fmt.mean)}`,
+          `Mediana,${formatSmart(s.median, fmt.median)}`,
+          `Q1,${formatSmart(s.q1, fmt.q1)}`,
+          `Q3,${formatSmart(s.q3, fmt.q3)}`,
+          `IQR,${formatSmart(s.iqr, fmt.iqr)}`,
+          `Minimo,${formatSmart(s.min, fmt.min)}`,
+          `Maximo,${formatSmart(s.max, fmt.max)}`,
+          `Bigote inferior,${formatSmart(s.lowWhisker, fmt.lowWhisker)}`,
+          `Bigote superior,${formatSmart(s.highWhisker, fmt.highWhisker)}`,
+          `Rango,${formatSmart(s.range, fmt.range)}`,
+          `Outliers,${s.outliers.join(' | ')}`
+        ];
+
+        const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'resumen_boxplot.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch {
+        showAlert('No se pudo exportar el resumen.', 'error');
+      }
+    });
+
+    btnExportSorted.addEventListener('click', () => {
+      try {
+        if (!currentStats) {
+          showAlert('Primero genera el gráfico.', 'error');
+          return;
+        }
+
+        const rows = ['dato_ordenado'];
+        currentStats.sorted.forEach(v => rows.push(v));
+
+        const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'datos_ordenados_boxplot.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch {
+        showAlert('No se pudieron exportar los datos.', 'error');
+      }
+    });
+
+    resize();
+  </script>
+
+
+
+<section class="instructions sim-instructions" aria-label="Instrucciones de la pr&aacute;ctica">
+  <h3>Instrucciones</h3>
+  <ul>
+    <li>Ajusta los par&aacute;metros desde el panel de controles.</li>
+    <li>Observa la respuesta del simulador y compara los resultados.</li>
+    <li>Usa las herramientas de exportaci&oacute;n cuando la pr&aacute;ctica las incluya.</li>
+  </ul>
+</section>
+<footer class="sim-footer">
+  &copy; 2026 Simuladores de F&iacute;sica &mdash; Desarrollado por <strong>MSc. Jorge Chimarro Alvear</strong>
+</footer>
+<script src="../../assets/js/simulator-theme.js"></script>
+</body>
+</html>

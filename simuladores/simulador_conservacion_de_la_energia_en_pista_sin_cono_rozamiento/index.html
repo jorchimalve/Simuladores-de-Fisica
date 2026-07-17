@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Conservaci&oacute;n de la energ&iacute;a en pista</title>
+
+  <meta name="description" content="Observa el intercambio entre energ&iacute;a potencial y cin&eacute;tica en una trayectoria sin rozamiento.">
+
+  
+  <link rel="stylesheet" href="../../assets/css/simulator-base.css">
+</head>
+<body>
+<header class="sim-header">
+  <div class="sim-title-group">
+    <h1>Conservaci&oacute;n de la energ&iacute;a en pista</h1>
+    <p class="sim-subtitle">Observa el intercambio entre energ&iacute;a potencial y cin&eacute;tica en una trayectoria sin rozamiento.</p>
+  </div>
+  <label class="theme-toggle">
+    <span>Modo oscuro</span>
+    <input type="checkbox" id="themeSwitch">
+  </label>
+</header>
+
+
+
+
+<div class="container">
+  <section class="panel controls" aria-label="Controles del simulador">
+    <h2>Par&aacute;metros del sistema</h2>
+
+    <div class="row">
+      <label for="hRange">Altura inicial H (m)</label>
+      <input id="hRange" type="range" min="0.1" max="2.0" step="0.01" value="0.80" />
+      <input id="hNum" class="num" type="number" min="0.1" max="2.0" step="0.01" value="0.80" />
+    </div>
+
+    <div class="row">
+      <label for="mRange">Masa m (kg)</label>
+      <input id="mRange" type="range" min="0.05" max="2.0" step="0.01" value="0.20" />
+      <input id="mNum" class="num" type="number" min="0.05" max="2.0" step="0.01" value="0.20" />
+    </div>
+
+    <div class="row">
+      <label for="gRange">Gravedad g (m/s&sup2;)</label>
+      <input id="gRange" type="range" min="1" max="20" step="0.1" value="9.8" />
+      <input id="gNum" class="num" type="number" min="1" max="20" step="0.1" value="9.8" />
+    </div>
+
+    <div class="switch">
+      <input id="fricToggle" type="checkbox" />
+      <label for="fricToggle">Activar rozamiento</label>
+    </div>
+
+    <div id="fricBox" style="display:none">
+      <div class="row">
+        <label for="bRange">Arrastre viscoso b (kg/s) - proporcional a v</label>
+        <input id="bRange" type="range" min="0" max="3" step="0.01" value="0.30" />
+        <input id="bNum" class="num" type="number" min="0" max="3" step="0.01" value="0.30" />
+      </div>
+      <div class="row">
+        <label for="muRange">Rozamiento cin&eacute;tico &mu;<sub>k</sub> - independiente de v</label>
+        <input id="muRange" type="range" min="0" max="0.30" step="0.005" value="0.02" />
+        <input id="muNum" class="num" type="number" min="0" max="0.30" step="0.005" value="0.02" />
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button id="btnStart" class="primary">Iniciar</button>
+      <button id="btnPause">Pausar</button>
+      <button id="btnReset" class="danger">Reiniciar</button>
+      <button id="btnFit" data-fit-view>Ajustar vista</button>
+    </div>
+
+    <div class="stats" style="margin-top:16px">
+      <div class="card"><span>Energ&iacute;a mec&aacute;nica inicial (m g H) [J]</span><strong id="e0Out">-</strong></div>
+      <div class="card"><span>Energ&iacute;a potencial (J)</span><strong id="epOut">-</strong></div>
+      <div class="card"><span>Energ&iacute;a cin&eacute;tica (J)</span><strong id="ekOut">-</strong></div>
+      <div class="card"><span>Energ&iacute;a mec&aacute;nica actual (J)</span><strong id="emOut">-</strong></div>
+      <div class="card"><span>Tiempo hasta detenerse (umbral 0.01 m/s)</span><strong id="tStopOut">-</strong></div>
+    </div>
+
+    <h2 style="margin-top:16px">Velocidad en puntos de control</h2>
+    <table>
+      <thead><tr><th>Punto</th><th>x (m)</th><th>y (m)</th><th>|v| 1.&ordf; pasada (m/s)</th><th>t 1.&ordf; pasada (s)</th></tr></thead>
+      <tbody id="cpBody"></tbody>
+    </table>
+
+    <div class="tests" id="tests" hidden hidden hidden hidden></div>
+  </section>
+
+  <section class="panel canvas-wrap" aria-label="Escena del simulador">
+    <div class="legend">Pista con base recta; la bola (amarilla) parte a la izquierda en y = H. Azul: trayectoria; fucsia: vector velocidad.
+      <br>Modelo: a<sub>t</sub> = -g&middot;sin&theta; - (b/m)&middot;v - &mu;<sub>k</sub>&middot;g&middot;cos&theta;&middot;sign(v)</div>
+    <canvas id="cv"></canvas>
+  </section>
+</div>
+
+<div class="footer">Tip: pausa para inspeccionar velocidades al cruzar los puntos. Sin rozamiento la masa no afecta el movimiento; con rozamiento activo se disipa energ&iacute;a. El tiempo de detenci&oacute;n usa |v| &lt; 0.01 m/s como umbral.</div>
+
+<script>
+// ---------- Utilidades UI ----------
+const $ = (s)=>document.querySelector(s);
+const hR=$('#hRange'), hN=$('#hNum');
+const mR=$('#mRange'), mN=$('#mNum');
+const gR=$('#gRange'), gN=$('#gNum');
+const fricT=$('#fricToggle'), fricBox=$('#fricBox');
+const bR=$('#bRange'), bN=$('#bNum');
+const muR=$('#muRange'), muN=$('#muNum');
+const btnStart=$('#btnStart'), btnPause=$('#btnPause'), btnReset=$('#btnReset'), btnFit=$('#btnFit');
+const e0Out=$('#e0Out'), epOut=$('#epOut'), ekOut=$('#ekOut'), emOut=$('#emOut'), tStopOut=$('#tStopOut');
+const cpBody=$('#cpBody');
+const testsOut=$('#tests');
+
+function bind(range, num, setter){
+  const up=(v)=>{range.value=v;num.value=v;setter(+v);recompute();draw();};
+  range.addEventListener('input',e=>up(e.target.value));
+  num.addEventListener('input',e=>up(e.target.value));
+}
+
+// ---------- Geometr&iacute;a de la pista ----------
+// Pista tipo "valle" con base recta (m&aacute;s parecida al prototipo)
+// Puntos (x[m], y[m]) para ~4.4 m de largo y base plana a y=0.18 m
+const basePoints=[
+  {x:0.00,y:1.30},   // extremo izquierdo alto
+  {x:0.45,y:0.80},   // descenso
+  {x:1.10,y:0.30},   // transici&oacute;n a base
+  {x:1.60,y:0.18},   // inicio base recta
+  {x:2.80,y:0.18},   // base recta prolongada
+  {x:3.30,y:0.30},   // salida de base
+  {x:3.95,y:0.80},   // ascenso
+  {x:4.40,y:1.30}    // extremo derecho alto
+];
+
+// Interpolaci&oacute;n Catmull-Rom para suavizar
+function sampleTrack(t){ // t in [0,1]
+  const n=basePoints.length-1; const u=t*n; const i=Math.floor(u);
+  const tt=u-i; // local [0,1]
+  const i0=Math.max(0,i-1), i1=i, i2=Math.min(n,i+1), i3=Math.min(n,i+2);
+  const p0=basePoints[i0], p1=basePoints[i1], p2=basePoints[i2], p3=basePoints[i3];
+  const x=catmull(p0.x,p1.x,p2.x,p3.x,tt);
+  const y=catmull(p0.y,p1.y,p2.y,p3.y,tt);
+  const dx=catmullDer(p0.x,p1.x,p2.x,p3.x,tt)*(n);
+  const dy=catmullDer(p0.y,p1.y,p2.y,p3.y,tt)*(n);
+  return {x,y,dx,dy};
+}
+function catmull(p0,p1,p2,p3,t){
+  return 0.5*((2*p1)+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t*t+(-p0+3*p1-3*p2+p3)*t*t*t);
+}
+function catmullDer(p0,p1,p2,p3,t){
+  return 0.5*((-p0+p2)+(2*(2*p0-5*p1+4*p2-p3))*t+(3*(-p0+3*p1-3*p2+p3))*t*t);
+}
+
+// Pre-calcula longitud por muestreo para relacionar "s" (arco) con "t"
+const LUT=[]; // [{t,x,y,s,dx,dy}]
+function buildLUT(){
+  LUT.length=0; let s=0; let prev=sampleTrack(0);
+  LUT.push({t:0,x:prev.x,y:prev.y,s:0,dx:prev.dx,dy:prev.dy});
+  const steps=800;
+  for(let i=1;i<=steps;i++){
+    const t=i/steps; const p=sampleTrack(t); const ds=Math.hypot(p.x-prev.x,p.y-prev.y);
+    s+=ds; LUT.push({t,x:p.x,y:p.y,s,dx:p.dx,dy:p.dy}); prev=p;
+  }
+}
+buildLUT();
+const totalLen=LUT[LUT.length-1].s;
+
+function tFromS(s){ // bsearch in LUT
+  if(s<=0) return 0; if(s>=totalLen) return 1;
+  let lo=0,hi=LUT.length-1; while(lo+1<hi){const mid=(lo+hi)>>1; (LUT[mid].s<=s)?lo=mid:hi=mid}
+  const a=LUT[lo], b=LUT[hi]; const f=(s-a.s)/(b.s-a.s); return a.t+f*(b.t-a.t);
+}
+
+// ---------- Estado de simulaci&oacute;n ----------
+const state={
+  H:0.80, m:0.20, g:9.8, useFric:false, b:0.30, mu:0.02,
+  t:0, playing:false,
+  s:0, v:0, // posici&oacute;n por arco y velocidad tangencial
+  points:[0.10,0.50,0.90].map(frac=>({frac, crossed:false, v:NaN, t:NaN}))
+};
+
+bind(hR,hN,v=>state.H=v);
+bind(mR,mN,v=>state.m=v);
+bind(gR,gN,v=>state.g=v);
+bind(bR,bN,v=>state.b=v);
+bind(muR,muN,v=>state.mu=v);
+fricT.addEventListener('change',()=>{state.useFric=fricT.checked;fricBox.style.display=state.useFric ? 'block' : 'none';recompute();draw();});
+
+// Condiciones iniciales: coloca la bola en el extremo izquierdo a la altura H
+function resetIC(){
+  // busca de izquierda a derecha la primera muestra con y <= H
+  const target=state.H; let idx=0;
+  for(let i=0;i<LUT.length;i++){ if(LUT[i].y<=target){ idx=i; break; } }
+  state.s = LUT[idx].s;
+  state.v = 0; state.t=0; state.playing=false;
+  state.points.forEach(p=>{p.crossed=false;p.v=NaN;p.t=NaN});
+  updateCPTable();
+}
+
+// Energ&iacute;a mec&aacute;nica inicial (en el punto de arranque)
+function E0(){ return state.m*state.g*state.H; }
+
+// Din&aacute;mica 1D sobre la pista
+function deriv(s,v){
+  const t=tFromS(s); const P=sampleTrack(t);
+  const slope=Math.atan2(P.dy,P.dx); // ?
+  const g=state.g, m=state.m; const b=state.useFric ? state.b : 0; const mu=state.useFric ? state.mu : 0;
+  const a_g = -g*Math.sin(slope); // positivo hacia abajo del plano tangente
+  const a_visc = -(b/m)*v; // arrastre viscoso
+  const a_coul = -mu*g*Math.cos(slope)*Math.sign(v||1e-9); // fricci&oacute;n seca
+  const a = a_g + a_visc + a_coul;
+  return {dsdt:v, dvdt:a};
+}
+
+// Integraci&oacute;n RK4
+function step(dt){
+  const k1=deriv(state.s,state.v);
+  const k2=deriv(state.s+0.5*dt*k1.dsdt, state.v+0.5*dt*k1.dvdt);
+  const k3=deriv(state.s+0.5*dt*k2.dsdt, state.v+0.5*dt*k2.dvdt);
+  const k4=deriv(state.s+dt*k3.dsdt,     state.v+dt*k3.dvdt);
+  state.s += dt*(k1.dsdt+2*k2.dsdt+2*k3.dsdt+k4.dsdt)/6;
+  state.v += dt*(k1.dvdt+2*k2.dvdt+2*k3.dvdt+k4.dvdt)/6;
+}
+
+// Detecci&oacute;n de topes (no salir del tramo)
+function reflectAtEnds(){
+  if(state.s<0){ state.s=0; state.v=Math.max(0,-state.v); }
+  if(state.s>totalLen){ state.s=totalLen; state.v=Math.min(0,-state.v); }
+}
+
+// Cruces por puntos de control
+const controlTs = [0.10,0.50,0.90].map(f=>tFromS(f*totalLen));
+function checkControlPasses(prevS,nowS,time){
+  for(let i=0;i<state.points.length;i++){
+    if(state.points[i].crossed) continue;
+    const sCP = controlTs[i]*totalLen;
+    const crossed = (prevS<=sCP && nowS>=sCP) || (prevS>=sCP && nowS<=sCP);
+    if(crossed){
+      state.points[i].crossed=true;
+      state.points[i].v=Math.abs(state.v);
+      state.points[i].t=time;
+      updateCPTable();
+    }
+  }
+}
+
+function updateCPTable(){
+  cpBody.innerHTML='';
+  for(let i=0;i<state.points.length;i++){
+    const t=controlTs[i]; const P=sampleTrack(t);
+    const row=document.createElement('tr');
+    row.innerHTML=`<td>P${i+1}</td><td>${P.x.toFixed(2)}</td><td>${P.y.toFixed(2)}</td><td>${isNaN(state.points[i].v) ? '-' : state.points[i].v.toFixed(3)}</td><td>${isNaN(state.points[i].t) ? '-' : state.points[i].t.toFixed(2)}</td>`;
+    cpBody.appendChild(row);
+  }
+}
+
+// ---------- Dibujo ----------
+const cv=document.getElementById('cv'); const ctx=cv.getContext('2d');
+let w,h,dpr;
+function resize(){
+  const rect=cv.parentElement.getBoundingClientRect();
+  w=Math.max(320,Math.floor(rect.width)); h=Math.max(260,Math.floor(rect.height));
+  dpr=window.devicePixelRatio||1; cv.width=Math.floor(w*dpr); cv.height=Math.floor(h*dpr); ctx.setTransform(dpr,0,0,dpr,0,0);
+  draw();
+}
+window.addEventListener('resize',resize);
+
+function worldToCanvas(x,y){ // padding
+  const margin={l:40,r:20,t:20,b:40};
+  const bounds={x0:basePoints[0].x-0.2,x1:basePoints.at(-1).x+0.2,y0:0,y1:Math.max(...basePoints.map(p=>p.y))+0.2};
+  const scaleX=(w-margin.l-margin.r)/(bounds.x1-bounds.x0);
+  const scaleY=(h-margin.t-margin.b)/(bounds.y1-bounds.y0);
+  const px=margin.l+(x-bounds.x0)*scaleX;
+  const py=h-margin.b-(y-bounds.y0)*scaleY;
+  return {x:px,y:py,scaleX,scaleY,margin}
+}
+
+function drawTrack(){
+  ctx.save();
+  ctx.strokeStyle='#4cc9f0'; ctx.lineWidth=2;
+  ctx.beginPath();
+  const p0=sampleTrack(0); let c=worldToCanvas(p0.x,p0.y); ctx.moveTo(c.x,c.y);
+  for(let i=1;i<=400;i++){ const t=i/400; const p=sampleTrack(t); c=worldToCanvas(p.x,p.y); ctx.lineTo(c.x,c.y); }
+  ctx.stroke();
+  // suelo
+  ctx.strokeStyle=document.body.classList.contains('dark') ? '#64748b' : '#475569'; ctx.lineWidth=3; const m=worldToCanvas(0,0).margin; ctx.beginPath(); ctx.moveTo(m.l,h-m.b); ctx.lineTo(w-m.r,h-m.b); ctx.stroke();
+  ctx.restore();
+}
+
+function draw(){
+  // fondo
+  const grd=ctx.createLinearGradient(0,0,0,h); const canvasBg = document.body.classList.contains('dark') ? '#111827' : '#ffffff'; grd.addColorStop(0, canvasBg); grd.addColorStop(1, canvasBg); ctx.fillStyle=grd; ctx.fillRect(0,0,w,h);
+  drawTrack();
+  // bola
+  const t=tFromS(state.s); const P=sampleTrack(t); const c=worldToCanvas(P.x,P.y);
+  // vector velocidad
+  const th=Math.atan2(P.dy,P.dx); const vx=state.v*Math.cos(th); const vy=state.v*Math.sin(th);
+  ctx.save(); ctx.strokeStyle='#f72585'; ctx.lineWidth=2.2; ctx.beginPath(); ctx.moveTo(c.x,c.y); ctx.lineTo(c.x+vx*12, c.y-vy*12); ctx.stroke(); ctx.restore();
+  ctx.save(); ctx.fillStyle='#ffd166'; ctx.beginPath(); ctx.arc(c.x,c.y,6,0,Math.PI*2); ctx.fill(); ctx.restore();
+  updateEnergyReadouts(P);
+}
+
+// ---------- Simulaci&oacute;n y l&oacute;gica de parada ----------
+let lastTS=0; let tStop=null; const dt=1/120; // 120 Hz fijo
+function loop(ts){
+  if(!state.playing){ draw(); return; }
+  if(!lastTS) lastTS=ts; const realdt=(ts-lastTS)/1000; lastTS=ts;
+  const subSteps=Math.max(1,Math.round(realdt/dt));
+  for(let n=0;n<subSteps;n++){
+    const sPrev=state.s;
+    step(dt); reflectAtEnds(); state.t+=dt; checkControlPasses(sPrev,state.s,state.t);
+    if(Math.abs(state.v)<0.01 && state.useFric){ tStop = tStop ?? state.t; state.playing=false; break; }
+  }
+  draw();
+  if(state.playing) requestAnimationFrame(loop);
+}
+
+function recompute(){
+  e0Out.textContent=(E0()).toFixed(3);
+  tStop=null; tStopOut.textContent='-';
+  updateEnergyReadouts();
+}
+
+function updateEnergyReadouts(point){
+  const P = point || sampleTrack(tFromS(state.s));
+  const ep = state.m * state.g * P.y;
+  const ek = 0.5 * state.m * state.v * state.v;
+  epOut.textContent = ep.toFixed(3);
+  ekOut.textContent = ek.toFixed(3);
+  emOut.textContent = (ep + ek).toFixed(3);
+}
+
+// ---------- Controles ----------
+btnStart.addEventListener('click',()=>{ if(!state.playing){ state.playing=true; lastTS=0; requestAnimationFrame(loop); } });
+btnPause.addEventListener('click',()=>{ state.playing=false; });
+btnReset.addEventListener('click',()=>{ state.playing=false; resetIC(); recompute(); draw(); });
+btnFit.addEventListener('click',()=>{ resize(); draw(); });
+
+// inicializaci&oacute;n
+resetIC(); recompute(); resize(); draw();
+
+// Observa si ya se detuvo por rozamiento
+setInterval(()=>{ if(tStop!==null){ tStopOut.textContent=tStop.toFixed(2); } },200);
+
+// ---------- PRUEBAS (auto-tests) ----------
+(function runTests(){
+  const results=[];
+  function ok(name,cond){ results.push(`<div class="${cond ? 'ok' : 'fail'}">${cond ? 'OK' : 'ERROR'} ${name}</div>`); }
+
+  // Test 1: Sin rozamiento, la aceleraci&oacute;n en una rampa inclinada debe apuntar cuesta abajo
+  const tLeft=0.05; const P=sampleTrack(tLeft); const slope=Math.atan2(P.dy,P.dx); const a_g=-state.g*Math.sin(slope); ok('a_t apunta cuesta abajo (signo correcto)', a_g>0);
+
+  // Test 2: La base tiene casi pendiente cero
+  const tMid=tFromS(0.5*totalLen); const Pm=sampleTrack(tMid); ok('Base ~horizontal', Math.abs(Pm.dy)<0.03);
+
+  // Test 3: No hay NaN en LUT
+  ok('LUT v&aacute;lido', isFinite(totalLen) && totalLen>0);
+
+  testsOut.innerHTML = `<strong>Pruebas autom&aacute;ticas</strong>${results.join('')}`;
+})();
+</script>
+
+
+
+<section class="instructions sim-instructions" aria-label="Instrucciones de la pr&aacute;ctica">
+  <h3>Instrucciones</h3>
+  <ul>
+    <li>Ajusta los par&aacute;metros desde el panel de controles.</li>
+    <li>Observa la respuesta del simulador y compara los resultados.</li>
+    <li>Usa las herramientas de exportaci&oacute;n cuando la pr&aacute;ctica las incluya.</li>
+  </ul>
+</section>
+<footer class="sim-footer">
+  &copy; 2026 Simuladores de F&iacute;sica &mdash; Desarrollado por <strong>MSc. Jorge Chimarro Alvear</strong>
+</footer>
+<script src="../../assets/js/simulator-theme.js"></script>
+</body>
+</html>

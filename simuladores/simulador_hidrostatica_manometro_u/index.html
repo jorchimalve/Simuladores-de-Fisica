@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hidrost&aacute;tica y man&oacute;metro en U</title>
+  
+  <meta name="description" content="Calcula diferencias de presi&oacute;n a partir de densidad, gravedad y altura de columnas de fluido.">
+
+  
+  <link rel="stylesheet" href="../../assets/css/simulator-base.css">
+</head>
+<body>
+<header class="sim-header">
+  <div class="sim-title-group">
+    <h1>Hidrost&aacute;tica y man&oacute;metro en U</h1>
+    <p class="sim-subtitle">Calcula diferencias de presi&oacute;n a partir de densidad, gravedad y altura de columnas de fluido.</p>
+  </div>
+  <label class="theme-toggle">
+    <span>Modo oscuro</span>
+    <input type="checkbox" id="themeSwitch">
+  </label>
+</header>
+
+
+  
+
+  <div class="container">
+    <section class="panel controls" aria-label="Controles del simulador de hidrost&aacute;tica">
+      <h2>Par&aacute;metros f&iacute;sicos</h2>
+
+      <div class="row">
+        <label for="rhoRange">Densidad del fluido manom&eacute;trico &rho; (kg/m&sup3;)</label>
+        <input id="rhoRange" type="range" min="500" max="2000" step="10" value="1000" />
+        <input id="rhoNum" class="num" type="number" min="500" max="2000" step="10" value="1000" />
+      </div>
+
+      <div class="row">
+        <label for="gRange">Gravedad g (m/s&sup2;)</label>
+        <input id="gRange" type="range" min="1.0" max="20.0" step="0.1" value="9.81" />
+        <input id="gNum" class="num" type="number" min="1.0" max="20.0" step="0.1" value="9.81" />
+      </div>
+
+      <div class="row">
+        <label for="rhoExtRange">Densidad del fluido de la c&aacute;psula (kg/m&sup3;)</label>
+        <input id="rhoExtRange" type="range" min="500" max="1600" step="10" value="1000" />
+        <input id="rhoExtNum" class="num" type="number" min="500" max="1600" step="10" value="1000" />
+      </div>
+
+      <div class="row">
+        <label for="hCapsRange">Altura equivalente de inmersi&oacute;n (m)</label>
+        <input id="hCapsRange" type="range" min="-0.25" max="0.25" step="0.005" value="0.10" />
+        <input id="hCapsNum" class="num" type="number" min="-0.25" max="0.25" step="0.005" value="0.10" />
+      </div>
+
+      <div class="row">
+        <label for="h0Range">Altura de referencia h0 en cada rama (m)</label>
+        <input id="h0Range" type="range" min="0.08" max="0.35" step="0.005" value="0.22" />
+        <input id="h0Num" class="num" type="number" min="0.08" max="0.35" step="0.005" value="0.22" />
+      </div>
+
+      <div class="row">
+        <label for="areaRange">&Aacute;rea efectiva de la c&aacute;psula A (cm&sup2;)</label>
+        <input id="areaRange" type="range" min="1" max="40" step="0.5" value="12" />
+        <input id="areaNum" class="num" type="number" min="1" max="40" step="0.5" value="12" />
+      </div>
+
+      <h3>Control manual</h3>
+      <div class="row">
+        <label for="targetRange">Altura equivalente de inmersi&oacute;n (cm)</label>
+        <input id="targetRange" type="range" min="-25" max="25" step="0.5" value="10" />
+        <input id="targetNum" class="num" type="number" min="-25" max="25" step="0.5" value="10" />
+      </div>
+
+      <div class="row">
+        <label for="speedRange">Amortiguamiento visual del movimiento</label>
+        <input id="speedRange" type="range" min="0.02" max="0.35" step="0.01" value="0.12" />
+        <input id="speedNum" class="num" type="number" min="0.02" max="0.35" step="0.01" value="0.12" />
+      </div>
+
+      <div class="switch">
+        <input id="waveToggle" type="checkbox" checked />
+        <label for="waveToggle">Mostrar oscilaci&oacute;n suave del fluido</label>
+      </div>
+
+      <div class="buttons">
+        <button id="btnCenter" class="primary">Centrar</button>
+  <button id="btnTop">Subir</button>
+  <button id="btnBottom">Bajar</button>
+  <button id="btnReset" class="danger">Reiniciar</button>
+  <button data-fit-view>Ajustar vista</button>
+</div>
+
+      <div class="formula" id="formulaBox">
+        <div><code>&Delta;P = &rho;&middot;g&middot;h<sub>c</sub></code></div>
+        <div><code>&Delta;h = &Delta;P / (&rho;-g)</code></div>
+        <div><code>h<sub>izq</sub> = h0 - &Delta;h/2</code>, <code>h<sub>der</sub> = h0 + &Delta;h/2</code></div>
+      </div>
+
+      <div class="stats stats-wide">
+        <div class="card">
+          <span>&Delta;h total</span>
+          <strong id="dhOut">-</strong>
+        </div>
+        <div class="card">
+          <span>Altura izquierda</span>
+          <strong id="hlOut">-</strong>
+        </div>
+        <div class="card">
+          <span>Altura derecha</span>
+          <strong id="hrOut">-</strong>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="card">
+          <span>Fuerza equivalente en c&aacute;psula</span>
+          <strong id="forceOut">-</strong>
+        </div>
+        <div class="card">
+          <span>Estado del sistema</span>
+          <strong id="stateOut">Estable</strong>
+        </div>
+      </div>
+
+      <p class="hint">Convenci&oacute;n usada: una presi&oacute;n positiva hace que la columna izquierda baje y la derecha suba. Una presi&oacute;n negativa invierte el comportamiento.</p>
+    </section>
+
+    <section class="panel canvas-wrap scene-wrap" aria-label="Escena del man&oacute;metro en U">
+      <div class="legend">
+        - Fluido manom&eacute;trico<br>
+        - Escala en cm<br>
+        - L&iacute;nea punteada: referencia h0<br>
+        - Solo se muestra el man&oacute;metro en U
+      </div>
+      <canvas id="cv"></canvas>
+    </section>
+  </div>
+
+  <div class="footer">
+    Simulador conceptual para pr&aacute;ctica de hidrost&aacute;tica con variaci&oacute;n de presi&oacute;n, densidad, gravedad y alturas en un man&oacute;metro en U.
+  </div>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+
+    const rhoRange = $('#rhoRange'), rhoNum = $('#rhoNum');
+    const gRange = $('#gRange'), gNum = $('#gNum');
+    const rhoExtRange = $('#rhoExtRange'), rhoExtNum = $('#rhoExtNum');
+    const hCapsRange = $('#hCapsRange'), hCapsNum = $('#hCapsNum');
+    const h0Range = $('#h0Range'), h0Num = $('#h0Num');
+    const areaRange = $('#areaRange'), areaNum = $('#areaNum');
+    const targetRange = $('#targetRange'), targetNum = $('#targetNum');
+    const speedRange = $('#speedRange'), speedNum = $('#speedNum');
+    const waveToggle = $('#waveToggle');
+
+    const btnCenter = $('#btnCenter');
+    const btnTop = $('#btnTop');
+    const btnBottom = $('#btnBottom');
+    const btnReset = $('#btnReset');
+
+    const dhOut = $('#dhOut');
+    const hlOut = $('#hlOut');
+    const hrOut = $('#hrOut');
+    const forceOut = $('#forceOut');
+    const stateOut = $('#stateOut');
+
+    const cv = $('#cv');
+    const ctx = cv.getContext('2d');
+
+    let w = 900, h = 600;
+    let lastTs = 0;
+
+    const state = {
+      rho: 1000,
+      g: 9.81,
+      rhoExt: 1000,
+      hCaps: 0.10,
+      hCapsTarget: 0.10,
+      h0: 0.22,
+      areaCm2: 12,
+      smoothFactor: 0.12,
+      wave: true,
+      time: 0,
+      metersToPx: 900,
+      maxTubeHeight: 0.42,
+      pressure: 0,
+      hl: 0.22,
+      hr: 0.22,
+      dh: 0,
+      force: 0,
+      clamped: false,
+    };
+
+    function bindPair(range, num, setter){
+      const update = (val) => {
+        setter(+val);
+        range.value = val;
+        num.value = val;
+        compute();
+        draw();
+      };
+      range.addEventListener('input', e => update(e.target.value));
+      num.addEventListener('input', e => update(e.target.value));
+    }
+
+    bindPair(rhoRange, rhoNum, v => state.rho = v);
+    bindPair(gRange, gNum, v => state.g = v);
+    bindPair(rhoExtRange, rhoExtNum, v => state.rhoExt = v);
+    bindPair(hCapsRange, hCapsNum, v => { state.hCaps = v; state.hCapsTarget = v; targetRange.value = (v * 100).toFixed(1); targetNum.value = (v * 100).toFixed(1); });
+    bindPair(h0Range, h0Num, v => state.h0 = v);
+    bindPair(areaRange, areaNum, v => state.areaCm2 = v);
+    bindPair(targetRange, targetNum, v => { state.hCapsTarget = v / 100; });
+    bindPair(speedRange, speedNum, v => state.smoothFactor = v);
+
+    waveToggle.addEventListener('change', () => {
+      state.wave = waveToggle.checked;
+      draw();
+    });
+
+    function compute(){
+      const rho = Math.max(1, state.rho);
+      const rhoExt = Math.max(1, state.rhoExt);
+      const g = Math.max(0.01, state.g);
+      const h0 = state.h0;
+      const maxH = state.maxTubeHeight;
+
+      state.pressure = rhoExt * g * state.hCaps;
+
+      let dh = state.pressure / (rho * g);
+      let hl = h0 - dh / 2;
+      let hr = h0 + dh / 2;
+
+      state.clamped = false;
+
+      if (hl < 0) {
+        hl = 0;
+        hr = Math.min(maxH, 2 * h0);
+        state.clamped = true;
+      }
+      if (hr < 0) {
+        hr = 0;
+        hl = Math.min(maxH, 2 * h0);
+        state.clamped = true;
+      }
+      if (hl > maxH) {
+        hl = maxH;
+        hr = Math.max(0, 2 * h0 - maxH);
+        state.clamped = true;
+      }
+      if (hr > maxH) {
+        hr = maxH;
+        hl = Math.max(0, 2 * h0 - maxH);
+        state.clamped = true;
+      }
+
+      state.dh = hr - hl;
+      state.hl = hl;
+      state.hr = hr;
+      state.force = state.pressure * (state.areaCm2 * 1e-4);
+
+      dhOut.textContent = `${(state.dh * 100).toFixed(2)} cm`;
+      hlOut.textContent = `${(state.hl * 100).toFixed(2)} cm`;
+      hrOut.textContent = `${(state.hr * 100).toFixed(2)} cm`;
+      forceOut.textContent = `${state.force.toFixed(3)} N`;
+      stateOut.textContent = state.clamped ? 'L\u00edmite geom\u00e9trico' : 'Manual';
+    }
+
+    function resize(){
+      const rect = cv.parentElement.getBoundingClientRect();
+      w = Math.max(420, Math.floor(rect.width));
+      h = Math.max(460, Math.floor(rect.height));
+      const dpr = window.devicePixelRatio || 1;
+      cv.width = Math.floor(w * dpr);
+      cv.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+
+    window.addEventListener('resize', resize);
+
+    function drawRoundedRect(x, y, width, height, r){
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + width, y, x + width, y + height, r);
+      ctx.arcTo(x + width, y + height, x, y + height, r);
+      ctx.arcTo(x, y + height, x, y, r);
+      ctx.arcTo(x, y, x + width, y, r);
+      ctx.closePath();
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,w,h);
+      const bg = ctx.createLinearGradient(0,0,0,h);
+      const canvasBg = document.body.classList.contains('dark') ? '#111827' : '#ffffff';
+      bg.addColorStop(0, canvasBg);
+      bg.addColorStop(1, canvasBg);
+      ctx.fillStyle = bg;
+      ctx.fillRect(0,0,w,h);
+
+      const tubeTop = 70;
+      const tubeBottom = h - 120;
+      const tubeHeightPx = tubeBottom - tubeTop;
+      const pxPerM = tubeHeightPx / state.maxTubeHeight;
+
+      const leftX = w * 0.40;
+      const rightX = w * 0.60;
+      const glassW = 74;
+      const fluidW = 48;
+
+      const yLeft = tubeBottom - state.hl * pxPerM;
+      const yRight = tubeBottom - state.hr * pxPerM;
+      const refY = tubeBottom - state.h0 * pxPerM;
+
+      const waveAmp = state.wave ? Math.min(2.0, Math.abs(state.hCapsTarget - state.hCaps) * 10 + 0.2) : 0;
+      const wavePhase = state.time * 5;
+
+      function drawGlassTube(cx){
+        ctx.fillStyle = document.body.classList.contains('dark') ? 'rgba(255,255,255,0.08)' : 'rgba(37,99,235,0.06)';
+        drawRoundedRect(cx - glassW/2, tubeTop, glassW, tubeHeightPx, 24);
+        ctx.fill();
+
+        ctx.strokeStyle = document.body.classList.contains('dark') ? 'rgba(220,235,255,0.92)' : '#475569';
+        ctx.lineWidth = 3;
+        drawRoundedRect(cx - glassW/2, tubeTop, glassW, tubeHeightPx, 24);
+        ctx.stroke();
+      }
+
+      drawGlassTube(leftX);
+      drawGlassTube(rightX);
+
+      const centerX = (leftX + rightX) / 2;
+      const centerY = tubeBottom;
+      const outerR = (rightX - leftX) / 2;
+      const innerR = outerR - 8;
+
+      ctx.strokeStyle = document.body.classList.contains('dark') ? 'rgba(220,235,255,0.92)' : '#475569';
+      ctx.lineWidth = 30;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, outerR, Math.PI, 0, false);
+      ctx.stroke();
+
+      ctx.strokeStyle = document.body.classList.contains('dark') ? '#334155' : '#dbe3ee';
+      ctx.lineWidth = 16;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, innerR, Math.PI, 0, false);
+      ctx.stroke();
+
+      const liquidGrad = ctx.createLinearGradient(0, tubeTop, 0, tubeBottom);
+      liquidGrad.addColorStop(0, 'rgba(112,226,255,0.96)');
+      liquidGrad.addColorStop(1, 'rgba(42,166,209,0.99)');
+      ctx.fillStyle = liquidGrad;
+
+      drawRoundedRect(leftX - fluidW/2, yLeft, fluidW, tubeBottom - yLeft + 1, 10);
+      ctx.fill();
+      drawRoundedRect(rightX - fluidW/2, yRight, fluidW, tubeBottom - yRight + 1, 10);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, innerR - 1, Math.PI, 0, false);
+      ctx.lineTo(rightX - fluidW/2, tubeBottom + 1);
+      ctx.lineTo(leftX + fluidW/2, tubeBottom + 1);
+      ctx.closePath();
+      ctx.fill();
+
+      function drawMeniscus(x, y, sign){
+        ctx.beginPath();
+        ctx.moveTo(x - fluidW/2 + 4, y + 1);
+        ctx.quadraticCurveTo(x, y + sign * waveAmp + Math.sin(wavePhase) * waveAmp * 0.2, x + fluidW/2 - 4, y + 1);
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#b6f2ff';
+        ctx.stroke();
+      }
+
+      drawMeniscus(leftX, yLeft, 1);
+      drawMeniscus(rightX, yRight, -1);
+
+      ctx.setLineDash([8,8]);
+      ctx.strokeStyle = 'rgba(255,209,102,0.82)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(leftX - 85, refY);
+      ctx.lineTo(rightX + 85, refY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ffd166';
+      ctx.font = '12px Arial';
+      ctx.fillText('h0', Math.min(rightX + 94, w - 24), refY + 4);
+
+      const midX = (leftX + rightX) / 2;
+      ctx.strokeStyle = '#f72585';
+      ctx.fillStyle = '#f72585';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(midX, yLeft);
+      ctx.lineTo(midX, yRight);
+      ctx.stroke();
+
+      const arrowSize = 8;
+      function arrow(x, y, up){
+        ctx.beginPath();
+        if(up){
+          ctx.moveTo(x, y);
+          ctx.lineTo(x - arrowSize/2, y + arrowSize);
+          ctx.lineTo(x + arrowSize/2, y + arrowSize);
+        } else {
+          ctx.moveTo(x, y);
+          ctx.lineTo(x - arrowSize/2, y - arrowSize);
+          ctx.lineTo(x + arrowSize/2, y - arrowSize);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      if(yRight < yLeft){
+        arrow(midX, yRight, true);
+        arrow(midX, yLeft, false);
+      } else {
+        arrow(midX, yLeft, true);
+        arrow(midX, yRight, false);
+      }
+
+      ctx.fillStyle = '#ff93c0';
+      ctx.font = 'bold 15px Arial';
+      ctx.fillText(`\u0394h = ${(Math.abs(state.dh) * 100).toFixed(2)} cm`, Math.min(midX + 14, w - 150), (yLeft + yRight)/2 - 8);
+
+      ctx.fillStyle = '#6ee7a8';
+      ctx.font = 'bold 14px Arial';
+      ctx.fillText(`\u0394P = ${state.pressure.toFixed(0)} Pa`, 56, 100);
+      ctx.fillText(`h_eq = ${(state.hCaps * 100).toFixed(1)} cm`, 56, 122);
+
+      ctx.fillStyle = document.body.classList.contains('dark') ? '#d8e7ff' : '#111827';
+      ctx.font = '13px Arial';
+      const infoX = Math.max(16, Math.min(rightX + 86, w - 210));
+      ctx.fillText(`\u03c1 = ${state.rho.toFixed(0)} kg/m\u00b3`, infoX, h - 86);
+      ctx.fillText(`\u03c1 ext. = ${state.rhoExt.toFixed(0)} kg/m\u00b3`, infoX, h - 64);
+      ctx.fillText(`g = ${state.g.toFixed(2)} m/s\u00b2`, infoX, h - 42);
+      ctx.fillText(`A = ${state.areaCm2.toFixed(1)} cm\u00b2`, infoX, h - 20);
+
+      ctx.fillStyle = document.body.classList.contains('dark') ? '#9cecff' : '#0f766e';
+      ctx.fillText(`h_i = ${(state.hl*100).toFixed(2)} cm`, leftX - 62, yLeft - 14);
+      ctx.fillText(`h_d = ${(state.hr*100).toFixed(2)} cm`, rightX - 30, yRight - 14);
+    }
+
+    function animate(ts){
+      if(!lastTs) lastTs = ts;
+      const dt = (ts - lastTs) / 1000;
+      lastTs = ts;
+      state.time += dt;
+
+      const diff = state.hCapsTarget - state.hCaps;
+      state.hCaps += diff * Math.min(1, state.smoothFactor * 10);
+      hCapsRange.value = state.hCaps.toFixed(3);
+      hCapsNum.value = state.hCaps.toFixed(3);
+
+      compute();
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    btnCenter.addEventListener('click', () => {
+      state.hCapsTarget = 0;
+      targetRange.value = 0;
+      targetNum.value = 0;
+    });
+
+    btnTop.addEventListener('click', () => {
+      state.hCapsTarget = Math.min(0.25, state.hCapsTarget + 0.02);
+      targetRange.value = (state.hCapsTarget * 100).toFixed(1);
+      targetNum.value = (state.hCapsTarget * 100).toFixed(1);
+    });
+
+    btnBottom.addEventListener('click', () => {
+      state.hCapsTarget = Math.max(-0.25, state.hCapsTarget - 0.02);
+      targetRange.value = (state.hCapsTarget * 100).toFixed(1);
+      targetNum.value = (state.hCapsTarget * 100).toFixed(1);
+    });
+
+    btnReset.addEventListener('click', () => {
+      state.hCaps = 0;
+      state.hCapsTarget = 0;
+      hCapsRange.value = 0;
+      hCapsNum.value = 0;
+      targetRange.value = 0;
+      targetNum.value = 0;
+      state.time = 0;
+      compute();
+      draw();
+    });
+
+    compute();
+    resize();
+    requestAnimationFrame(animate);
+  </script>
+
+
+
+<section class="instructions sim-instructions" aria-label="Instrucciones de la pr&aacute;ctica">
+  <h3>Instrucciones</h3>
+  <ul>
+    <li>Ajusta los par&aacute;metros desde el panel de controles.</li>
+    <li>Observa la respuesta del simulador y compara los resultados.</li>
+    <li>Usa las herramientas de exportaci&oacute;n cuando la pr&aacute;ctica las incluya.</li>
+  </ul>
+</section>
+<footer class="sim-footer">
+  &copy; 2026 Simuladores de F&iacute;sica &mdash; Desarrollado por <strong>MSc. Jorge Chimarro Alvear</strong>
+</footer>
+<script src="../../assets/js/simulator-theme.js"></script>
+</body>
+</html>

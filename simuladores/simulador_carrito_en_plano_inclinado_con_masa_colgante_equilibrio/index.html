@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Equilibrio en plano inclinado</title>
+  
+  <meta name="description" content="Relaciona tensi&oacute;n, peso y componentes de fuerza en un carrito con masa colgante.">
+
+  
+  <link rel="stylesheet" href="../../assets/css/simulator-base.css">
+</head>
+<body>
+<header class="sim-header">
+  <div class="sim-title-group">
+    <h1>Equilibrio en plano inclinado</h1>
+    <p class="sim-subtitle">Relaciona tensi&oacute;n, peso y componentes de fuerza en un carrito con masa colgante.</p>
+  </div>
+  <label class="theme-toggle">
+    <span>Modo oscuro</span>
+    <input type="checkbox" id="themeSwitch">
+  </label>
+</header>
+
+
+  
+
+  <div class="container">
+    <!-- Panel de controles -->
+    <section class="panel controls" aria-label="Controles del simulador">
+      <h2>Par&aacute;metros</h2>
+
+      <div class="row">
+        <label for="angRange">&Aacute;ngulo del plano &theta; (&deg;)</label>
+        <input id="angRange" type="range" min="0" max="60" step="0.1" value="30" />
+        <input id="angNum" class="num" type="number" min="0" max="60" step="0.1" value="30" />
+      </div>
+
+      <div class="row">
+        <label for="MRange">Masa del carrito M (kg)</label>
+        <input id="MRange" type="range" min="0.5" max="50" step="0.1" value="10" />
+        <input id="MNum" class="num" type="number" min="0.5" max="50" step="0.1" value="10" />
+      </div>
+
+      <div class="row">
+        <label for="mRange">Masa colgante m (kg)</label>
+        <input id="mRange" type="range" min="0.5" max="50" step="0.1" value="5" />
+        <input id="mNum" class="num" type="number" min="0.5" max="50" step="0.1" value="5" />
+      </div>
+
+      <div class="row">
+        <label for="gRange">Gravedad g (m/s&sup2;)</label>
+        <input id="gRange" type="range" min="1" max="20" step="0.1" value="9.8" />
+        <input id="gNum" class="num" type="number" min="1" max="20" step="0.1" value="9.8" />
+      </div>
+
+      <div class="buttons">
+  <button id="btnEval" class="primary">Evaluar equilibrio</button>
+  <button id="btnPlay">Simular</button>
+  <button id="btnReset" class="danger">Reiniciar</button>
+  <button data-fit-view>Ajustar vista</button>
+</div>
+
+      <p style="margin-top:10px">Estado: <span id="status" class="badge">-</span></p>
+
+      <div class="stats grid-3">
+        <div class="card"><span>Condici&oacute;n de equilibrio</span><strong id="eqCond">m&middot;g &asymp; M&middot;g&middot;sin&theta;</strong></div>
+        <div class="card"><span>Resultado num&eacute;rico</span><strong id="eqNums">-</strong></div>
+        <div class="card"><span>Aceleraci&oacute;n (m/s&sup2;)</span><strong id="aOut">0.00</strong></div>
+      </div>
+    </section>
+
+    <!-- Lienzo -->
+    <section class="panel canvas-wrap" aria-label="Escena del simulador">
+      <div class="legend">Modelo usado: equilibrio si <strong>m = M&middot;sin&theta;</strong>. Si m &gt; M&middot;sin&theta; &rarr; el sistema se mueve <em>hacia la derecha</em> (carro sube la rampa). Si m &lt; M&middot;sin&theta; &rarr; <em>hacia la izquierda</em> (carro baja).</div>
+      <canvas id="cv"></canvas>
+    </section>
+  </div>
+
+  <div class="footer">
+    La simulaci&oacute;n solo ilustra la direcci&oacute;n (no hay fricci&oacute;n). <span class="hint">Aceleraci&oacute;n: a = g&middot;(m - M&middot;sin&theta;)/(M + m)</span>.
+  </div>
+
+  <script>
+    const $ = (s)=>document.querySelector(s);
+    const angR=$('#angRange'), angN=$('#angNum');
+    const MR=$('#MRange'), MN=$('#MNum');
+    const mR=$('#mRange'), mN=$('#mNum');
+    const gR=$('#gRange'), gN=$('#gNum');
+    const btnEval=$('#btnEval'), btnPlay=$('#btnPlay'), btnReset=$('#btnReset');
+
+    const status=$('#status');
+    const eqCond=$('#eqCond');
+    const eqNums=$('#eqNums');
+    const aOut=$('#aOut');
+
+    const cv=document.getElementById('cv');
+    const ctx=cv.getContext('2d');
+
+    let w=0,h=0; const dpr=window.devicePixelRatio||1;
+
+    const state={theta:30*M_PI_180(), M:10, m:5, g:9.8, playing:false, x:0, yHang:0, vel:0};
+
+    function limits(){
+      const margin=40;
+      const rampLen = Math.min(w-2*margin, h-2*margin) * 0.9;
+      const s = (rampLen-100)/6; // escala (px por metro visual)
+      const minOff = 40;              // margen desde el pie
+      const maxOff = rampLen - 60;    // margen antes de la polea
+      return {s, minX:(minOff-50)/s, maxX:(maxOff-50)/s, rampLen};
+    }
+
+    function M_PI_180(){return Math.PI/180}
+
+    function sync(range, num, set){
+      const upd=(v)=>{ v=+v; range.value=v; num.value=v; set(v); compute(); draw(); };
+      range.addEventListener('input',(e)=>upd(e.target.value));
+      num.addEventListener('input',(e)=>upd(e.target.value));
+    }
+
+    sync(angR, angN, v=>state.theta=v*M_PI_180());
+    sync(MR, MN, v=>state.M=v);
+    sync(mR, mN, v=>state.m=v);
+    sync(gR, gN, v=>state.g=v);
+
+    function resize(){
+      const rect=cv.parentElement.getBoundingClientRect();
+      w=Math.max(320,Math.floor(rect.width));
+      h=Math.max(320,Math.floor(rect.height));
+      cv.width=w*dpr; cv.height=h*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+      compute(); draw();
+    }
+    window.addEventListener('resize', resize);
+
+    function compute(){
+      const th=state.theta, M=state.M, m=state.m, g=state.g;
+      const Msintheta = M*Math.sin(th);
+      const a = g*(m - Msintheta)/(M + m); // + => derecha (carro sube)
+      state.a=a;
+      aOut.textContent = a.toFixed(3);
+      eqNums.textContent = `${(m*g).toFixed(2)} vs ${(M*g*Math.sin(th)).toFixed(2)}`;
+      if(Math.abs(m - Msintheta) < 1e-4){ status.textContent='Equilibrio'; status.style.color='#6ee7a8'; }
+      else if(m>Msintheta){ status.textContent='Se mueve a la DERECHA (carro sube)'; status.style.color='#9fd0ff'; }
+      else { status.textContent='Se mueve a la IZQUIERDA (carro baja)'; status.style.color='#fca5a5'; }
+    }
+
+    // Animaci&oacute;n simple para ilustrar direcci&oacute;n
+    let lastTS=0;
+    function loop(ts){
+      if(!state.playing){ draw(); return; }
+      if(!lastTS) lastTS=ts; const dt=(ts-lastTS)/1000; lastTS=ts;
+      // movimiento limitado: avanza continuamente hasta tocar l-mites (pie o polea)
+      state.vel += state.a*dt;
+      state.x += state.vel*dt;
+      state.yHang += state.vel*dt; // coherente con direcci&oacute;n
+
+      const {minX, maxX} = limits();
+      if(state.x > maxX){ state.x = maxX; state.vel = 0; }
+      if(state.x < minX){ state.x = minX; state.vel = 0; }
+
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    btnEval.addEventListener('click', ()=>{ compute(); draw(); });
+    btnPlay.addEventListener('click', ()=>{ state.playing=!state.playing; lastTS=0; btnPlay.textContent= state.playing? 'Pausar' : 'Simular'; if(state.playing) requestAnimationFrame(loop); });
+    btnReset.addEventListener('click', ()=>{ state.playing=false; btnPlay.textContent='Simular'; state.x=0; state.yHang=0; state.vel=0; compute(); draw(); });
+
+    function drawSetup(){
+      // fondo
+      const grd = ctx.createLinearGradient(0,0,0,h);
+      const canvasBg = document.body.classList.contains('dark') ? '#111827' : '#ffffff';
+      grd.addColorStop(0, canvasBg);
+      grd.addColorStop(1, canvasBg);
+      ctx.fillStyle=grd; ctx.fillRect(0,0,w,h);
+    }
+
+    function draw(){
+      // si est&aacute; en equilibrio, no simular desplazamiento
+      if(Math.abs(state.a) < 1e-6) { state.vel = 0; }
+      drawSetup();
+      // sistema geom-trico
+      const margin=40; 
+      const baseY = h - margin - 20;
+      const rampLen = Math.min(w-2*margin, h-2*margin) * 0.9;
+      const th = state.theta; 
+      const dx = rampLen*Math.cos(th), dy = rampLen*Math.sin(th);
+      const x0 = margin+40, y0 = baseY; // pie de la rampa
+      const x1 = x0 + dx, y1 = y0 - dy; // cima
+
+      // rampa
+      ctx.strokeStyle=document.body.classList.contains('dark') ? '#64748b' : '#475569'; ctx.lineWidth=5; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+
+      // polea superior
+      const pulleyR=18; const pulleyX=x1; const pulleyY=y1-20;
+      ctx.fillStyle=document.body.classList.contains('dark') ? '#1e293b' : '#ffffff'; ctx.strokeStyle='#3a5ea3'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(pulleyX,pulleyY,pulleyR,0,Math.PI*2); ctx.fill(); ctx.stroke();
+
+      // carrito
+      const carW=70, carH=35; 
+      // posici&oacute;n del carrito a lo largo de la rampa en px (mapear estado.x ~ metros ficticios)
+      const {s} = limits();
+      const offset = 50 + state.x*s; // centro inicial + desplazamiento
+      const cx = x0 + (offset)*Math.cos(th);
+      const cy = y0 - (offset)*Math.sin(th);
+      ctx.save();
+      ctx.translate(cx,cy); ctx.rotate(-th);
+      ctx.fillStyle='#ffd166'; ctx.strokeStyle='#caa24a'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.roundRect(-carW/2,-carH-8,carW,carH,8); ctx.fill(); ctx.stroke();
+      // ruedas
+      ctx.fillStyle='#111';
+      ctx.beginPath(); ctx.arc(-carW/3, -8, 7,0,Math.PI*2); ctx.arc(carW/3, -8, 7,0,Math.PI*2); ctx.fill();
+      // etiqueta M
+      ctx.fillStyle='#1b2c56'; ctx.fillRect(-carW/2+6,-carH-2,38,18);
+      ctx.fillStyle=document.body.classList.contains('dark') ? '#f1f5f9' : '#111827'; ctx.font='12px Arial'; ctx.fillText(`M=${state.M.toFixed(1)}kg`, -carW/2+8,-carH- -11);
+      ctx.restore();
+
+      // cuerda desde el CENTRO del carro hasta la polea y hacia abajo a la masa colgante
+      const bodyCenterOffset = (carH/2 + 8); // respecto al centro del carro, en el eje normal
+      const ropeAttachX = cx + bodyCenterOffset * Math.sin(th);
+      const ropeAttachY = cy - bodyCenterOffset * Math.cos(th);
+      ctx.strokeStyle='#a5b8e6'; ctx.lineWidth=2; ctx.beginPath();
+      ctx.moveTo(ropeAttachX, ropeAttachY);
+      ctx.lineTo(pulleyX, pulleyY);
+      ctx.lineTo(pulleyX, pulleyY + 140 + state.yHang*12);
+      ctx.stroke();
+
+      // masa colgante
+      const mY = pulleyY + 140 + state.yHang*12;
+      ctx.fillStyle='#83d0ff'; ctx.strokeStyle='#2aa6d1'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.roundRect(pulleyX-25, mY, 50, 34, 6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=document.body.classList.contains('dark') ? '#f1f5f9' : '#111827'; ctx.font='12px Arial'; ctx.fillText(`m=${state.m.toFixed(1)}kg`, pulleyX-23, mY+22);
+
+      // indicadores de direcci&oacute;n
+      ctx.save(); ctx.translate((x0+x1)/2, (y0+y1)/2);
+      ctx.rotate(-th);
+      const movingRight = state.a > 1e-6;
+      const movingLeft  = state.a < -1e-6;
+      const nearZero    = !movingRight && !movingLeft;
+      ctx.fillStyle = nearZero? '#6ee7a8' : (movingRight? '#9fd0ff' : '#fca5a5');
+      const txt = nearZero? 'Equilibrio' : (movingRight? 'Derecha' : 'Izquierda');
+      ctx.font='14px Arial';
+      ctx.fillText(`Direcci\u00f3n: ${txt}`, -60, -carH-60);
+      // flecha a lo largo de la rampa en el sentido correcto
+      if(!nearZero){
+        ctx.strokeStyle=ctx.fillStyle; ctx.lineWidth=3; ctx.beginPath();
+        const L=60;
+        if(movingRight){
+          ctx.moveTo(-L/2, -carH-40); ctx.lineTo(L/2, -carH-40);
+          ctx.moveTo(L/2, -carH-40); ctx.lineTo(L/2-10, -carH-47);
+          ctx.moveTo(L/2, -carH-40); ctx.lineTo(L/2-10, -carH-33);
+        } else {
+          ctx.moveTo(L/2, -carH-40); ctx.lineTo(-L/2, -carH-40);
+          ctx.moveTo(-L/2, -carH-40); ctx.lineTo(-L/2+10, -carH-47);
+          ctx.moveTo(-L/2, -carH-40); ctx.lineTo(-L/2+10, -carH-33);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // &Aacute;ngulo
+      ctx.strokeStyle='#7ea2d6'; ctx.lineWidth=2; ctx.beginPath();
+      ctx.arc(x0,y0,40, -Math.PI/2, -Math.PI/2+th, false); ctx.stroke();
+      ctx.fillStyle=document.body.classList.contains('dark') ? '#cbd5e1' : '#475569'; ctx.font='12px Arial'; ctx.fillText(`\u03b8 = ${(th*180/Math.PI).toFixed(1)}\u00b0`, x0+46*Math.cos(th/2), y0-46*Math.sin(th/2));
+    }
+
+    // polyfill para roundRect
+    if(!CanvasRenderingContext2D.prototype.roundRect){
+      CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+        const rr = Math.min(r, Math.abs(w)/2, Math.abs(h)/2);
+        this.beginPath();
+        this.moveTo(x+rr,y); this.lineTo(x+w-rr,y); this.quadraticCurveTo(x+w,y,x+w,y+rr);
+        this.lineTo(x+w,y+h-rr); this.quadraticCurveTo(x+w,y+h,x+w-rr,y+h);
+        this.lineTo(x+rr,y+h); this.quadraticCurveTo(x,y+h,x,y+h-rr);
+        this.lineTo(x,y+rr); this.quadraticCurveTo(x,y,x+rr,y); this.closePath();
+        return this; };
+    }
+
+    // init
+    resize(); compute(); draw();
+  </script>
+
+
+
+<section class="instructions sim-instructions" aria-label="Instrucciones de la pr&aacute;ctica">
+  <h3>Instrucciones</h3>
+  <ul>
+    <li>Ajusta los par&aacute;metros desde el panel de controles.</li>
+    <li>Observa la respuesta del simulador y compara los resultados.</li>
+    <li>Usa las herramientas de exportaci&oacute;n cuando la pr&aacute;ctica las incluya.</li>
+  </ul>
+</section>
+<footer class="sim-footer">
+  &copy; 2026 Simuladores de F&iacute;sica &mdash; Desarrollado por <strong>MSc. Jorge Chimarro Alvear</strong>
+</footer>
+<script src="../../assets/js/simulator-theme.js"></script>
+</body>
+</html>

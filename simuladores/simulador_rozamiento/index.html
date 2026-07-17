@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rozamiento en plano horizontal</title>
+  
+  <meta name="description" content="Compara rozamiento est&aacute;tico y cin&eacute;tico al variar fuerza aplicada, masa y coeficientes.">
+
+  
+  <link rel="stylesheet" href="../../assets/css/simulator-base.css">
+</head>
+<body>
+<header class="sim-header">
+  <div class="sim-title-group">
+    <h1>Rozamiento en plano horizontal</h1>
+    <p class="sim-subtitle">Compara rozamiento est&aacute;tico y cin&eacute;tico al variar fuerza aplicada, masa y coeficientes.</p>
+  </div>
+  <label class="theme-toggle">
+    <span>Modo oscuro</span>
+    <input type="checkbox" id="themeSwitch">
+  </label>
+</header>
+
+
+  
+
+  <div class="container">
+    <section class="panel controls" aria-label="Controles del simulador">
+      <h2>Par&aacute;metros</h2>
+
+      <div class="row">
+        <label for="mRange">Masa (kg)</label>
+        <input id="mRange" type="range" min="0.01" max="50" step="0.01" value="5.00" />
+        <input id="mNum" class="num" type="number" min="0.01" max="50" step="0.01" value="5.00" />
+      </div>
+
+      <div class="row">
+        <label for="gRange">Gravedad g (m/s&sup2;)</label>
+        <input id="gRange" type="range" min="0.10" max="20" step="0.01" value="9.80" />
+        <input id="gNum" class="num" type="number" min="0.10" max="20" step="0.01" value="9.80" />
+      </div>
+
+      <div class="row">
+        <label for="muSRange">Coef. rozamiento est&aacute;tico &mu;<sub>s</sub></label>
+        <input id="muSRange" type="range" min="0" max="1.50" step="0.001" value="0.400" />
+        <input id="muSNum" class="num" type="number" min="0" max="1.50" step="0.001" value="0.400" />
+      </div>
+
+      <div class="row">
+        <label for="muKRange">Coef. rozamiento cin&eacute;tico &mu;<sub>k</sub></label>
+        <input id="muKRange" type="range" min="0" max="1.50" step="0.001" value="0.300" />
+        <input id="muKNum" class="num" type="number" min="0" max="1.50" step="0.001" value="0.300" />
+      </div>
+
+      <div class="row">
+        <label for="FApRange">Fuerza aplicada F (N)</label>
+        <input id="FApRange" type="range" min="0" max="500" step="0.01" value="50.00" />
+        <input id="FApNum" class="num" type="number" min="0" max="500" step="0.01" value="50.00" />
+      </div>
+
+      <div class="buttons">
+        <button id="btnSim" class="primary">Simular</button>
+        <button id="btnPause">Pausar</button>
+      <button id="btnReset" class="danger">Reiniciar</button>
+      <button id="btnFit">Ajustar vista</button>
+      <button id="btnCSV">Descargar CSV</button>
+      </div>
+
+      <div id="status">Estado: -</div>
+
+      <div class="row">
+        <label for="timeRange">Tiempo (s) - desliza para inspeccionar</label>
+        <input id="timeRange" type="range" min="0" max="10" step="0.001" value="0.000" />
+        <input id="timeNum" class="num" type="number" min="0" max="10" step="0.001" value="0.000" />
+      </div>
+
+      <!-- Campos para ingreso manual del estudiante -->
+      <div class="stats grid-2">
+        <div class="card">
+          <span>Normal N (N)</span>
+          <input id="nIn" class="num" type="number" step="0.01" placeholder="Ingresa N" />
+          <div id="nCheck" class="check neutral">-</div>
+        </div>
+        <div class="card">
+          <span>F<sub>s,max</sub> (N)</span>
+          <input id="fsIn" class="num" type="number" step="0.01" placeholder="Ingresa F_s,max" />
+          <div id="fsCheck" class="check neutral">-</div>
+        </div>
+        <div class="card">
+          <span>Fricci&oacute;n (N)</span>
+          <input id="ffIn" class="num" type="number" step="0.01" placeholder="Ingresa F_f" />
+          <div id="ffCheck" class="check neutral">-</div>
+        </div>
+        <div class="card">
+          <span>Aceleraci&oacute;n a (m/s&sup2;)</span>
+          <input id="aIn" class="num" type="number" step="0.001" placeholder="Ingresa a" />
+          <div id="aCheck" class="check neutral">-</div>
+        </div>
+      </div>
+
+      <div class="buttons" style="margin-top:8px">
+        <button id="btnCheck" class="primary">Verificar respuestas</button>
+        <button id="btnClear">Borrar respuestas</button>
+      </div>
+
+      <h2 style="margin-top:16px">En el instante actual</h2>
+      <div class="stats grid-3">
+        <div class="card"><span>x (m)</span><strong id="xOut">0.000</strong></div>
+        <div class="card"><span>v (m/s)</span><strong id="vOut">0.000</strong></div>
+        <div class="card"><span>t (s)</span><strong id="tOut">0.000</strong></div>
+      </div>
+
+      <p class="sub">Criterio: si F &le; &mu;<sub>s</sub>N, no hay movimiento. Si F &gt; &mu;<sub>s</sub>N, act&uacute;a la fricci&oacute;n cin&eacute;tica &mu;<sub>k</sub>N.</p>
+    </section>
+
+    <section class="panel canvas-wrap" aria-label="Escena del simulador">
+      <div class="legend">Eje X (m). Flechas: azul F aplicada, violeta F de fricci&oacute;n, verde N y naranja W.</div>
+      <canvas id="cv"></canvas>
+    </section>
+  </div>
+
+  <div class="footer">
+    Consejo: en r&eacute;gimen est&aacute;tico la aceleraci&oacute;n es 0 y la fricci&oacute;n iguala a la fuerza aplicada (hasta F<sub>s,max</sub>). En cin&eacute;tico, a = (F - &mu;<sub>k</sub>N)/m.
+  </div>
+
+  <script>
+    const $ = (sel)=>document.querySelector(sel);
+    const mR=$('#mRange'), mN=$('#mNum');
+    const gR=$('#gRange'), gN=$('#gNum');
+    const muSR=$('#muSRange'), muSN=$('#muSNum');
+    const muKR=$('#muKRange'), muKN=$('#muKNum');
+    const FR=$('#FApRange'), FN=$('#FApNum');
+
+  const btnSim=$('#btnSim'), btnPause=$('#btnPause'), btnReset=$('#btnReset'), btnCSV=$('#btnCSV'), btnFit=$('#btnFit');
+    const btnCheck=$('#btnCheck'), btnClear=$('#btnClear');
+
+    const statusEl=$('#status');
+
+    const timeR=$('#timeRange'), timeN=$('#timeNum');
+    const xOut=$('#xOut'), vOut=$('#vOut'), tOut=$('#tOut');
+
+    // Entradas estudiante
+    const nIn=$('#nIn'), fsIn=$('#fsIn'), ffIn=$('#ffIn'), aIn=$('#aIn');
+    const nCheck=$('#nCheck'), fsCheck=$('#fsCheck'), ffCheck=$('#ffCheck'), aCheck=$('#aCheck');
+
+    const cv=document.getElementById('cv'); const ctx=cv.getContext('2d');
+    let w,h, pxPerM=50; const margin={l:64,r:30,t:28,b:60};
+
+    const state={
+      m:5, g:9.8, muS:0.4, muK:0.3, F:50,
+      playing:false, t:0, dt:0.01, autoAxes:true,
+      xRange:20, endTime:10, reachedLimit:false,
+      mode:'idle', // 'static' | 'kinetic' | 'idle'
+      a:0, N:0, FsMax:0, Ff:0,
+      path:[] // {t,x,v,a,Ff}
+    };
+
+    function syncIO(range,num,setter){
+      const update=(val)=>{
+        const v = parseFloat(val);
+        if (isFinite(v)) { setter(+v.toFixed(6)); range.value=v; num.value=v; compute(); draw(); }
+      };
+      range.addEventListener('input',e=>update(e.target.value));
+      num.addEventListener('input',e=>update(e.target.value));
+    }
+    syncIO(mR,mN,v=>state.m=v);
+    syncIO(gR,gN,v=>state.g=v);
+    syncIO(muSR,muSN,v=>state.muS=v);
+    syncIO(muKR,muKN,v=>state.muK=v);
+    syncIO(FR,FN,v=>state.F=v);
+  btnFit.addEventListener('click', ()=>{ state.autoAxes=true; compute(); resize(); draw(); });
+
+    function resize(){
+      const rect=cv.getBoundingClientRect();
+      w=Math.max(280, Math.floor(rect.width));
+      h=Math.max(420, Math.floor(rect.height));
+      const dpr=window.devicePixelRatio||1;
+      cv.width=Math.floor(w*dpr); cv.height=Math.floor(h*dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      compute(); draw();
+    }
+    window.addEventListener('resize', resize);
+
+    function syncTime(val){
+      const t = Math.min(state.endTime, Math.max(0, parseFloat(val) || 0));
+      state.t=t;
+      state.reachedLimit = state.endTime < 10 && state.t >= state.endTime - 1e-9;
+      timeR.value=t; timeN.value=t.toFixed(3);
+      state.playing=false; btnSim.textContent='Reanudar';
+      draw();
+    }
+    timeR.addEventListener('input', e=>syncTime(e.target.value));
+    timeN.addEventListener('input', e=>syncTime(e.target.value));
+
+    // F&iacute;sica
+    function compute(){
+      const {m,g,muS,muK,F}=state;
+      const N=m*g;
+      const FsMax=muS*N;
+      let mode, Ff, a;
+
+      if (F <= FsMax){
+        mode='static';
+        Ff = F;   // fricci&oacute;n iguala y se opone
+        a = 0;
+      } else {
+        mode='kinetic';
+        Ff = muK * N;
+        a = (F - Ff)/m;
+      }
+
+      state.mode=mode; state.N=N; state.FsMax=FsMax; state.Ff=Ff; state.a=a;
+
+      // trayectoria t en [0,10] con x0=0, v0=0
+      const T = 10, dt = 0.01;
+      state.path = [];
+      for(let t=0;t<=T+1e-9;t+=dt){
+        const x = (mode==='kinetic') ? 0.5*a*t*t : 0;
+        const v = (mode==='kinetic') ? a*t : 0;
+        state.path.push({t,x,v,a,Ff});
+      }
+
+      const limitTime = mode === 'kinetic' && a > 0
+        ? Math.sqrt((2 * state.xRange) / a)
+        : T;
+      state.endTime = Math.min(T, limitTime);
+      state.reachedLimit = state.endTime < T && state.t >= state.endTime - 1e-9;
+
+      timeR.max = state.endTime; timeN.max=state.endTime;
+      if (state.t>state.endTime){ state.t=state.endTime; }
+      timeR.value=state.t; timeN.value=state.t.toFixed(3);
+
+      // ejes
+      let xMaxM = 1;
+      if (state.autoAxes){
+        xMaxM = Math.max(1, state.xRange);
+      } else {
+        xMaxM = Math.max(1, state.xRange);
+      }
+      const scaleX = (w - margin.l - margin.r - 50)/xMaxM;
+      const scaleY = (h - margin.t - margin.b)/4; // 4 m de alto para dibujo
+      pxPerM = Math.max(6, Math.min(scaleX, scaleY));
+    }
+
+    function sampleAt(t){
+      const path=state.path;
+      if (!path.length) return {t:0,x:0,v:0,a:0,Ff:0};
+      if (t<=path[0].t) return path[0];
+      if (t>=path[path.length-1].t) return path[path.length-1];
+      let lo=0, hi=path.length-1;
+      while (lo+1<hi){
+        const mid=(lo+hi)>>1;
+        (path[mid].t<=t)? lo=mid : hi=mid;
+      }
+      const a=path[lo], b=path[hi], f=(t-a.t)/(b.t-a.t);
+      return {
+        t,
+        x:a.x+f*(b.x-a.x),
+        v:a.v+f*(b.v-a.v),
+        a:a.a+f*(b.a-a.a),
+        Ff:a.Ff+f*(b.Ff-a.Ff)
+      };
+    }
+
+    function worldToCanvas(pt){
+      const cx = margin.l + pt.x*pxPerM;
+      const cy = h - margin.b - pt.y*pxPerM;
+      return {x:cx, y:cy};
+    }
+
+    function clear(){
+      const grd = ctx.createLinearGradient(0,0,0,h);
+      const canvasBg = document.body.classList.contains('dark') ? '#111827' : '#ffffff';
+      grd.addColorStop(0, canvasBg);
+      grd.addColorStop(1, canvasBg);
+      ctx.fillStyle = grd;
+      ctx.fillRect(0,0,w,h);
+    }
+
+    function niceStep(raw){
+      const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+      const n = raw / pow;
+      let step = 1;
+      if (n > 5) step = 10; else if (n > 2) step = 5; else if (n > 1) step = 2; else step = 1;
+      return step * pow;
+    }
+
+    function drawAxes(){
+      ctx.save();
+      // suelo (eje x)
+      ctx.strokeStyle = document.body.classList.contains('dark') ? '#64748b' : '#475569';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(margin.l, h - margin.b);
+      const limitPoint = worldToCanvas({x:state.xRange,y:0});
+      ctx.lineTo(limitPoint.x, h - margin.b);
+      ctx.stroke();
+
+      ctx.save();
+      ctx.strokeStyle = document.body.classList.contains('dark') ? '#f87171' : '#b91c1c';
+      ctx.fillStyle = document.body.classList.contains('dark') ? '#fca5a5' : '#7f1d1d';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6,5]);
+      ctx.beginPath();
+      ctx.moveTo(limitPoint.x, margin.t);
+      ctx.lineTo(limitPoint.x, h - margin.b + 8);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font='bold 12px Arial';
+      ctx.textAlign='right';
+      ctx.fillText(`L\u00edmite: ${state.xRange.toFixed(0)} m`, limitPoint.x - 8, margin.t + 14);
+      ctx.restore();
+
+      // marcas de x
+      ctx.strokeStyle=document.body.classList.contains('dark') ? '#334155' : '#cbd5e1';
+      ctx.fillStyle=document.body.classList.contains('dark') ? '#cbd5e1' : '#475569';
+      ctx.font='12px Arial';
+      const xMaxM = state.xRange;
+      const step = niceStep(xMaxM/8);
+      for (let x=0; x<=xMaxM+1e-6; x+=step){
+        const p=worldToCanvas({x,y:0});
+        ctx.beginPath();
+        ctx.moveTo(p.x, h - margin.b - 4);
+        ctx.lineTo(p.x, h - margin.b + 4);
+        ctx.stroke();
+        ctx.fillText(x.toFixed(0), p.x-4, h - margin.b + 16);
+      }
+      ctx.restore();
+    }
+
+    function draw(){
+      clear();
+      drawAxes();
+
+      // bloque
+      const groundY=0;
+      const t=state.t;
+      const sample=sampleAt(t);
+      const s=state.reachedLimit ? {...sample,x:state.xRange} : sample;
+      const bx = s.x; // m
+      const by = 0.5; // m por est&aacute;tica (altura del bloque)
+      const blockW=1.2, blockH=0.6;
+      const c = worldToCanvas({x:bx,y:groundY});
+      const bw = Math.max(46, Math.min(90, blockW*pxPerM));
+      const bh = Math.max(30, Math.min(60, blockH*pxPerM));
+
+      // riel gu&iacute;a
+      ctx.save();
+      ctx.strokeStyle=document.body.classList.contains('dark') ? '#334155' : '#cbd5e1';
+      ctx.setLineDash([8,6]);
+      ctx.beginPath();
+      const yGuide = worldToCanvas({x:0, y:by-bh/pxPerM/2}).y;
+      ctx.moveTo(margin.l, yGuide);
+      ctx.lineTo(worldToCanvas({x:state.xRange,y:0}).x, yGuide);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      // dibujar bloque
+      ctx.save();
+      ctx.fillStyle=document.body.classList.contains('dark') ? '#f59e0b' : '#b45309';
+      const bxpx = c.x - bw/2;
+      const bypx = worldToCanvas({x:bx, y:by}).y - bh/2;
+      ctx.fillRect(bxpx, bypx, bw, bh);
+      ctx.strokeStyle=document.body.classList.contains('dark') ? '#64748b' : '#475569'; ctx.lineWidth=2;
+      ctx.strokeRect(bxpx, bypx, bw, bh);
+      ctx.restore();
+
+      // fuerzas (flechas)
+      const rightEdge = w - margin.r - 8;
+      const leftEdge = 8;
+      const topEdge = margin.t + 8;
+      const bottomEdge = h - margin.b - 8;
+      drawArrow(c.x, bypx+bh/2, Math.min(rightEdge, c.x + (state.F/50)*pxPerM), bypx+bh/2, document.body.classList.contains('dark') ? '#3b82f6' : '#1d4ed8');
+      const FfDir = -1; // opone a F (a la izquierda)
+      drawArrow(c.x, bypx+bh/2, Math.max(leftEdge, c.x + FfDir*(state.Ff/50)*pxPerM), bypx+bh/2, document.body.classList.contains('dark') ? '#8b5cf6' : '#7c3aed');
+
+      // N (arriba) y W (abajo)
+      drawArrow(c.x, bypx+bh/2, c.x, Math.max(topEdge, bypx - (state.N/400)*pxPerM), '#16a34a');
+      drawArrow(c.x, bypx+bh/2, c.x, Math.min(bottomEdge, bypx + (state.N/400)*pxPerM), '#ea580c');
+
+      // estado UI
+      if (state.reachedLimit){
+        statusEl.textContent = `Estado final: l\u00edmite visual de ${state.xRange.toFixed(0)} m alcanzado.`;
+      } else if (state.mode==='static'){
+        statusEl.textContent = `Estado: sin movimiento - rozamiento est\u00e1tico (F \u2264 \u03bcsN).`;
+      } else if (state.mode==='kinetic'){
+        statusEl.textContent = `Estado: en movimiento - rozamiento cin\u00e9tico (F > \u03bcsN).`;
+      } else {
+        statusEl.textContent = 'Estado: -';
+      }
+
+      // lecturas instant&aacute;neas
+      xOut.textContent = s.x.toFixed(3);
+      vOut.textContent = s.v.toFixed(3);
+      tOut.textContent = state.t.toFixed(3);
+    }
+
+    function drawArrow(x1,y1,x2,y2,color){
+      ctx.save();
+      ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=2.5;
+      ctx.beginPath();
+      ctx.moveTo(x1,y1);
+      ctx.lineTo(x2,y2);
+      ctx.stroke();
+      const ang=Math.atan2(y2-y1,x2-x1);
+      const ah=8;
+      ctx.beginPath();
+      ctx.moveTo(x2,y2);
+      ctx.lineTo(x2 - ah*Math.cos(ang - Math.PI/6), y2 - ah*Math.sin(ang - Math.PI/6));
+      ctx.lineTo(x2 - ah*Math.cos(ang + Math.PI/6), y2 - ah*Math.sin(ang + Math.PI/6));
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Animaci&oacute;n
+    let lastTS=0;
+    function loop(ts){
+      if (!state.playing){ draw(); return; }
+      if (!lastTS) lastTS=ts;
+      const dt=(ts-lastTS)/1000;
+      lastTS=ts;
+      state.t += dt;
+      const Tmax = state.endTime;
+      if (state.t>=Tmax){ state.t=Tmax; state.playing=false; btnSim.textContent='Simular'; }
+      state.reachedLimit = state.endTime < 10 && state.t >= state.endTime - 1e-9;
+      timeR.value=state.t; timeN.value=state.t.toFixed(3);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    // CSV
+    function toCSV(path){
+      const rows=['t,x,v,a,F_friccion'];
+      for (const p of path){
+        rows.push(`${p.t.toFixed(4)},${p.x.toFixed(4)},${p.v.toFixed(4)},${p.a.toFixed(4)},${p.Ff.toFixed(4)}`);
+      }
+      return rows.join('\n');
+    }
+
+    btnCSV.addEventListener('click', ()=>{
+      if (!state.path.length) return;
+      const csv=toCSV(state.path);
+      const blob=new Blob([csv],{type:'text/csv'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url; a.download='rozamiento_datos.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    // Controles
+    btnSim.addEventListener('click', ()=>{
+      compute();
+      state.t=0; state.reachedLimit=false; timeR.value=0; timeN.value=0;
+      state.playing=true; lastTS=0; btnSim.textContent='Reanudar';
+      requestAnimationFrame(loop);
+    });
+    btnPause.addEventListener('click', ()=>{ state.playing=false; btnSim.textContent='Reanudar'; draw(); });
+    btnReset.addEventListener('click', ()=>{ state.playing=false; state.t=0; state.reachedLimit=false; lastTS=0; btnSim.textContent='Simular'; compute(); draw(); clearChecks(); });
+
+    [mR,mN,gR,gN,muSR,muSN,muKR,muKN,FR,FN].forEach(el=>{
+      el.addEventListener('input', ()=>{ state.t=0; state.reachedLimit=false; state.playing=false; btnSim.textContent='Simular'; compute(); draw(); clearChecks(); });
+    });
+
+    // Verificaci&oacute;n
+    function approxEq(a,b){
+      const rel = Math.abs(a-b) / (Math.max(1e-9, Math.abs(b)));
+      return (rel <= 0.02) || (Math.abs(a-b) <= 1e-3);
+    }
+    function setCheck(el, ok, esperado){
+      if (el){
+        if (ok){ el.textContent = `Correcto`; el.className='check ok'; }
+        else { el.textContent = `Incorrecto. Valor esperado: ${esperado.toFixed(3)}`; el.className='check bad'; }
+      }
+    }
+    function clearChecks(){
+      [nCheck,fsCheck,ffCheck,aCheck].forEach(el=>{ el.textContent='-'; el.className='check neutral'; });
+      [nIn,fsIn,ffIn,aIn].forEach(el=>{ el.value=''; });
+    }
+    btnClear.addEventListener('click', clearChecks);
+
+    btnCheck.addEventListener('click', ()=>{
+      const N = state.m * state.g;
+      const FsMax = state.muS * N;
+      const Ff = (state.F <= FsMax) ? state.F : state.muK * N;
+      const a = (state.F <= FsMax) ? 0 : (state.F - state.muK * N)/state.m;
+
+      const vn = parseFloat(nIn.value);
+      const vfs = parseFloat(fsIn.value);
+      const vff = parseFloat(ffIn.value);
+      const va = parseFloat(aIn.value);
+
+      setCheck(nCheck, isFinite(vn)  && approxEq(vn, N), N);
+      setCheck(fsCheck, isFinite(vfs) && approxEq(vfs, FsMax), FsMax);
+      setCheck(ffCheck, isFinite(vff) && approxEq(Math.abs(vff), Math.abs(Ff)), Ff);
+      setCheck(aCheck, isFinite(va)  && approxEq(va, a), a);
+    });
+
+    // Init
+    resize();
+  </script>
+
+
+
+<section class="instructions sim-instructions" aria-label="Instrucciones de la pr&aacute;ctica">
+  <h3>Instrucciones</h3>
+  <ul>
+    <li>Ajusta los par&aacute;metros desde el panel de controles.</li>
+    <li>Observa la respuesta del simulador y compara los resultados.</li>
+    <li>Usa las herramientas de exportaci&oacute;n cuando la pr&aacute;ctica las incluya.</li>
+  </ul>
+</section>
+<footer class="sim-footer">
+  &copy; 2026 Simuladores de F&iacute;sica &mdash; Desarrollado por <strong>MSc. Jorge Chimarro Alvear</strong>
+</footer>
+<script src="../../assets/js/simulator-theme.js"></script>
+</body>
+</html>

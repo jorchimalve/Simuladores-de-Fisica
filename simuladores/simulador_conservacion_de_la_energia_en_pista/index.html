@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MRU y MRUV con fotopuertas</title>
+
+  <meta name="description" content="Compara movimiento uniforme y acelerado mediante mediciones virtuales de posici&oacute;n y tiempo.">
+
+  
+  <link rel="stylesheet" href="../../assets/css/simulator-base.css">
+</head>
+<body>
+<header class="sim-header">
+  <div class="sim-title-group">
+    <h1>MRU y MRUV con fotopuertas</h1>
+    <p class="sim-subtitle">Compara movimiento uniforme y acelerado mediante mediciones virtuales de posici&oacute;n y tiempo.</p>
+  </div>
+  <label class="theme-toggle">
+    <span>Modo oscuro</span>
+    <input type="checkbox" id="themeSwitch">
+  </label>
+</header>
+
+
+
+
+<div class="container">
+  <!-- Panel de controles -->
+  <section class="panel controls" aria-label="Controles del simulador">
+    <div class="tag">MRU = a = 0</div>
+    <div class="tag">MRUV: a = -g&middot;sin(&theta;) (si no defines a)</div>
+
+    <h2>Modo y condiciones</h2>
+    <div class="buttons mode-box" aria-label="Modo del movimiento">
+      <button id="modeMRU" type="button" class="primary" aria-pressed="true">MRU</button>
+      <button id="modeToggle" type="button" aria-pressed="false">MRUV</button>
+    </div>
+
+    <div class="row">
+      <label for="angleRange">&Aacute;ngulo del plano (&deg;) ( + sube hacia la derecha / - baja hacia la derecha )</label>
+      <input id="angleRange" type="range" min="-20" max="20" step="0.1" value="0"/>
+      <input id="angleNum" class="num" type="number" min="-20" max="20" step="0.1" value="0"/>
+    </div>
+
+    <div class="row">
+      <label for="gRange">Gravedad g (m/s&sup2;)</label>
+      <input id="gRange" type="range" min="1" max="20" step="0.1" value="9.8"/>
+      <input id="gNum" class="num" type="number" min="1" max="20" step="0.1" value="9.8"/>
+    </div>
+
+    <h2>Inicio y fin de pista</h2>
+    <div class="row">
+      <label for="startNum">Inicio s<sub>ini</sub> (m)</label>
+      <input id="startNum" class="num" type="number" step="0.01" value="0"/>
+    </div>
+    <div class="row">
+      <label for="endNum">Fin s<sub>fin</sub> (m)</label>
+      <input id="endNum" class="num" type="number" step="0.01" value="3"/>
+    </div>
+    <p class="hint">El m&oacute;vil no pasar&aacute; del fin ni del inicio. La vista siempre muestra toda la pista.</p>
+
+    <h2>Par&aacute;metros del movimiento</h2>
+    <div class="row">
+      <label for="v0Num">Velocidad inicial v0 (m/s)</label>
+      <input id="v0Num" class="num" type="number" step="0.01" value="1.50"/>
+    </div>
+    <div class="row">
+      <label for="aNum">Aceleraci&oacute;n a (m/s&sup2;) (solo MRUV; si 0: a = -g&middot;sin&theta;)</label>
+      <input id="aNum" class="num" type="number" step="0.01" value="0"/>
+    </div>
+
+    <div class="switch">
+      <input id="forceDir" type="checkbox" checked/>
+      <label for="forceDir">Forzar que el disparo apunte hacia el fin</label>
+    </div>
+
+    <h2>Fotopuertas (puntos de registro)</h2>
+    <div class="row">
+      <label for="gateStr">Posiciones (m), separadas por coma</label>
+      <textarea id="gateStr">0.5, 1, 1.5, 2, 2.5</textarea>
+    </div>
+    <div class="row">
+      <label for="gateWidth">Ancho de fotopuerta (m) (&le; 0.1 recomendado)</label>
+      <input id="gateWidth" class="num" type="number" step="0.001" value="0.02"/>
+    </div>
+
+    <div class="buttons">
+      <button id="btnArm" class="primary">Simular</button>
+      <button id="btnFire" class="primary">Iniciar</button>
+      <button id="btnPause">Pausar</button>
+      <button id="btnReset" class="danger">Reiniciar</button>
+      <button id="btnFit" data-fit-view>Ajustar vista</button>
+      <button id="btnCSV">Descargar CSV trayectoria</button>
+      <button id="btnCSVGates">Descargar CSV fotopuertas</button>
+    </div>
+
+    <div class="stats">
+      <div class="card"><span>t actual (s)</span><strong id="tOut">0.00</strong></div>
+      <div class="card"><span>s (m)</span><strong id="sOut">0.00</strong></div>
+      <div class="card"><span>v instant&aacute;neo (m/s)</span><strong id="vOut">0.00</strong></div>
+      <div class="card"><span>a efectivo (m/s&sup2;)</span><strong id="aOut">0.00</strong></div>
+    </div>
+
+    <h2>Registros de fotopuertas</h2>
+    <table id="gateTable">
+      <thead><tr><th>Posici&oacute;n (m)</th><th>t cruce (s)</th><th>&Delta;t desde anterior (s)</th><th>v instant&aacute;neo (m/s)</th><th>v promedio tramo (m/s)</th></tr></thead>
+      <tbody></tbody>
+      <tfoot><tr><td>Total</td><td id="tTotal">-</td><td>-</td><td>-</td><td id="vAvgTotal">-</td></tr></tfoot>
+    </table>
+  </section>
+
+  <!-- Lienzo -->
+  <section class="panel canvas-wrap" aria-label="Escena del simulador">
+    <div class="legend">La pista rota y se centra con margen interno. Rect&aacute;ngulos = fotopuertas.</div>
+    <canvas id="cv"></canvas>
+  </section>
+</div>
+
+<script>
+const $ = (s)=>document.querySelector(s);
+const modeToggle = $('#modeToggle');
+const angleR = $('#angleRange'), angleN = $('#angleNum');
+const gR = $('#gRange'), gN = $('#gNum');
+const startN = $('#startNum'), endN = $('#endNum');
+const v0N = $('#v0Num'), aN = $('#aNum');
+const btnFit = $('#btnFit');
+const forceDir = $('#forceDir');
+const gateStr = $('#gateStr'), gateWidthN = $('#gateWidth');
+const btnArm = $('#btnArm'), btnFire = $('#btnFire'), btnPause = $('#btnPause'), btnReset = $('#btnReset');
+const btnCSV = $('#btnCSV'), btnCSVG = $('#btnCSVGates');
+const tOut = $('#tOut'), sOut = $('#sOut'), vOut = $('#vOut'), aOut = $('#aOut');
+const tableBody = document.querySelector('#gateTable tbody');
+const tTotal = $('#tTotal'), vAvgTotal = $('#vAvgTotal');
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+let W,H, pxPerM=120;
+const margin = {l:40, r:20, t:20, b:40};
+let viewport = {ox:0, oy:0, scale:1};
+
+const state = {
+  modeMRUV: false,
+  thetaDeg: 0,
+  g: 9.8,
+  sStart: 0,
+  sEnd: 3,
+  v0: 1.5,
+  aInput: 0,
+  gates: [0.5,1,1.5,2,2.5],
+  gateWidth: 0.02,
+  t: 0, playing: false, armed: false,
+  s: 0, v: 0, a: 0,
+  path: [], hits: []
+};
+
+function sync(range, num, cb){
+  const up = (val)=>{ num.value = val; if(range) range.value = val; cb(+val); draw(); };
+  if(range){ range.addEventListener('input', e=>up(e.target.value)); }
+  num.addEventListener('input', e=>up(e.target.value));
+}
+
+// angle & gravity
+sync(angleR, angleN, v=>{state.thetaDeg=v; recomputeAccel();});
+sync(gR, gN, v=>{state.g=v; recomputeAccel();});
+
+const modeMRU = $('#modeMRU');
+function setMotionMode(useMRUV){
+  state.modeMRUV = useMRUV;
+  modeMRU.classList.toggle('primary', !useMRUV);
+  modeToggle.classList.toggle('primary', useMRUV);
+  modeMRU.setAttribute('aria-pressed', String(!useMRUV));
+  modeToggle.setAttribute('aria-pressed', String(useMRUV));
+  recomputeAccel();
+  draw();
+}
+modeMRU.addEventListener('click', ()=>setMotionMode(false));
+modeToggle.addEventListener('click', ()=>setMotionMode(true));
+btnFit.addEventListener('click', ()=>{ resize(); draw(); });
+
+startN.addEventListener('input', ()=>{ state.sStart = +startN.value; keepStartBeforeEnd(); resetToStart(); });
+endN.addEventListener('input', ()=>{ state.sEnd = +endN.value; keepStartBeforeEnd(); limitToTrack(); draw(); });
+v0N.addEventListener('input', ()=>{ state.v0 = +v0N.value; if(!state.playing){ maybeForceDir(); state.v = state.v0; draw(); }});
+aN.addEventListener('input', ()=>{ state.aInput = +aN.value; recomputeAccel(); });
+
+forceDir.addEventListener('change', ()=>{ if(!state.playing){ maybeForceDir(); draw(); }});
+
+gateStr.addEventListener('input', ()=>{ state.gates = parseGateStr(gateStr.value); renderTable(); draw(); });
+gateWidthN.addEventListener('input', ()=>{ state.gateWidth = Math.max(0.001, +gateWidthN.value); draw(); });
+
+function parseGateStr(str){ return str.split(',').map(s=>+s.trim()).filter(n=>!Number.isNaN(n)).sort((a,b)=>a-b); }
+function keepStartBeforeEnd(){ if (state.sEnd === state.sStart) state.sEnd = state.sStart + 0.5; if (state.sEnd < state.sStart){ const t = state.sStart; state.sStart = state.sEnd; state.sEnd = t; } }
+function resetToStart(){ maybeForceDir(); state.t=0; state.s=state.sStart; state.v=state.v0; state.path=[{t:0,s:state.s,v:state.v,a:state.a}]; state.hits=[]; updateReadouts(); renderTable(); draw(); }
+function limitToTrack(){ state.s = Math.min(Math.max(state.s, state.sStart), state.sEnd); }
+function maybeForceDir(){ if (!forceDir.checked) return; const toEnd = Math.sign(state.sEnd - state.sStart) || 1; if (Math.sign(state.v0) !== toEnd){ state.v0 = Math.abs(state.v0) * toEnd; v0N.value = state.v0.toFixed(2); } }
+
+function recomputeAccel(){
+  const th = state.thetaDeg*Math.PI/180;
+  state.a = state.modeMRUV ? ((state.aInput!==0) ? state.aInput : (-state.g*Math.sin(th))) : 0;
+  aOut.textContent = state.a.toFixed(3);
+}
+
+// controls
+btnArm.addEventListener('click', ()=>{ state.armed=true; state.playing=false; resetToStart(); });
+btnFire.addEventListener('click', ()=>{ if(!state.armed){ btnArm.click(); } state.playing=true; lastTS=0; requestAnimationFrame(loop); });
+btnPause.addEventListener('click', ()=>{ state.playing=false; });
+btnReset.addEventListener('click', ()=>{ state.playing=false; state.armed=false; state.t=0; state.s=state.sStart; state.v=state.v0; state.path=[]; state.hits=[]; updateReadouts(); renderTable(); draw(); });
+
+btnCSV.addEventListener('click', ()=>{ if(!state.path.length) return; const rows=['t,s,v,a']; state.path.forEach(p=>rows.push(`${p.t.toFixed(4)},${p.s.toFixed(4)},${p.v.toFixed(4)},${p.a.toFixed(4)}`)); downloadCSV(rows.join('\n'),'mru_mruv_muestreo.csv'); });
+btnCSVG.addEventListener('click', ()=>{ if(!state.hits.length) return; const rows=['pos,t_cruce,delta_t_desde_anterior,v_inst,v_prom_tramo']; state.hits.forEach(h=>rows.push(`${h.pos.toFixed(4)},${h.t.toFixed(4)},${(h.dt_from_prev??NaN).toFixed(4)},${h.v_inst.toFixed(4)},${(h.v_avg_section??NaN).toFixed(4)}`)); downloadCSV(rows.join('\n'),'mru_mruv_fotopuertas.csv'); });
+function downloadCSV(text,name){ const blob=new Blob([text],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
+
+// simulation
+let lastTS=0;
+function loop(ts){
+  if(!state.playing){ draw(); return; }
+  if(!lastTS) lastTS = ts;
+  let dt = (ts - lastTS)/1000; lastTS = ts; dt = Math.min(dt, 0.03);
+
+  const sPrev=state.s, vPrev=state.v, a=state.a;
+  let sNext, vNext;
+  if (Math.abs(a)<1e-12){ sNext=state.s+state.v*dt; vNext=state.v; }
+  else { sNext=state.s+state.v*dt+0.5*a*dt*dt; vNext=state.v+a*dt; }
+  const tNext=state.t+dt;
+
+  detectGateCrossings(sPrev, sNext, vPrev, a, state.t, tNext);
+
+  const dirNow = Math.sign(vNext || a || (state.sEnd - state.sStart));
+  if (sNext >= state.sEnd){ sNext=state.sEnd; if (dirNow>0){ state.playing=false; vNext=0; } }
+  if (sNext <= state.sStart){ sNext=state.sStart; if (dirNow<0){ state.playing=false; vNext=0; } }
+
+  state.s=sNext; state.v=vNext; state.t=tNext; state.path.push({t:state.t,s:state.s,v:state.v,a:state.a});
+  updateReadouts(); draw(); requestAnimationFrame(loop);
+}
+
+function detectGateCrossings(sA,sB,vA,a,tA,tB){
+  const gates = state.gates.filter(g=>g>=state.sStart && g<=state.sEnd);
+  const w = state.gateWidth/2;
+  for(const pos of gates){
+    if (state.hits.some(h=>Math.abs(h.pos-pos)<1e-9)) continue;
+    const left=pos-w,right=pos+w; const minSeg=Math.min(sA,sB), maxSeg=Math.max(sA,sB);
+    if (maxSeg<left || minSeg>right) continue;
+    let tCross;
+    if (Math.abs(a)<1e-12){ const v=vA; if(Math.abs(v)<1e-12) continue; tCross=tA+(pos-sA)/v; }
+    else { const A=0.5*a,B=vA,C=(sA-pos); const disc=B*B-4*A*C; if(disc<0) continue; const sqrt=Math.sqrt(disc);
+      const dt1=(-B - sqrt)/(2*A), dt2=(-B + sqrt)/(2*A);
+      const candidates=[dt1,dt2].map(dt=>tA+dt).filter(t=>t>=tA-1e-9 && t<=tB+1e-9);
+      if(!candidates.length) continue; tCross=candidates.sort((a,b)=>a-b)[0];
+    }
+    const dtc=tCross-tA; const vInst=vA+a*dtc;
+    let dtFromPrev=NaN, vAvgSection=NaN;
+    if(state.hits.length){ const prev=state.hits[state.hits.length-1]; dtFromPrev=tCross-prev.t; const ds=pos-prev.pos; vAvgSection=(dtFromPrev>0)?(ds/dtFromPrev):NaN; }
+    state.hits.push({pos, t:tCross, v_inst:vInst, dt_from_prev:dtFromPrev, v_avg_section:vAvgSection});
+  }
+  state.hits.sort((h1,h2)=>h1.pos-h2.pos); renderTable();
+}
+
+function renderTable(){
+  const rows = state.hits.map(h=>`<tr><td>${h.pos.toFixed(3)}</td><td>${h.t.toFixed(4)}</td><td>${isNaN(h.dt_from_prev) ? '-' : h.dt_from_prev.toFixed(4)}</td><td>${h.v_inst.toFixed(4)}</td><td>${isNaN(h.v_avg_section) ? '-' : h.v_avg_section.toFixed(4)}</td></tr>`);
+  tableBody.innerHTML = rows.join('');
+  if(state.hits.length){ const first=state.hits[0], last=state.hits[state.hits.length-1]; const totalT=last.t-first.t; const totalS=last.pos-first.pos;
+    tTotal.textContent = totalT>0?totalT.toFixed(4):'-'; vAvgTotal.textContent = (totalT>0)?(totalS/totalT).toFixed(4):'-';
+  } else { tTotal.textContent='-'; vAvgTotal.textContent='-'; }
+}
+function updateReadouts(){ tOut.textContent=state.t.toFixed(2); sOut.textContent=state.s.toFixed(3); vOut.textContent=state.v.toFixed(3); aOut.textContent=state.a.toFixed(3); }
+
+// ---------- DIBUJO, AUTOENFOQUE y AUTO-EJES ----------
+function resize(){ const rect=cv.parentElement.getBoundingClientRect(); W=Math.max(320,Math.floor(rect.width)); H=Math.max(260,Math.floor(rect.height));
+  const dpr=window.devicePixelRatio||1; cv.width=Math.floor(W*dpr); cv.height=Math.floor(H*dpr); ctx.setTransform(dpr,0,0,dpr,0,0); draw(); }
+window.addEventListener('resize', resize);
+
+function clear(){ const grd=ctx.createLinearGradient(0,0,0,H); const canvasBg = document.body.classList.contains('dark') ? '#111827' : '#ffffff'; grd.addColorStop(0, canvasBg); grd.addColorStop(1, canvasBg); ctx.fillStyle=grd; ctx.fillRect(0,0,W,H); }
+
+function setViewport(){
+  const th=state.thetaDeg*Math.PI/180;
+  const L=Math.max(0.01, Math.abs(state.sEnd-state.sStart));
+  const x0=0, y0=0; const x1=L*Math.cos(th), y1=L*Math.sin(th);
+  const minX=Math.min(x0,x1), maxX=Math.max(x0,x1);
+  const minY=Math.min(y0,y1), maxY=Math.max(y0,y1);
+  const pad=0.4; // m
+  const availX=(W - margin.l - margin.r); const availY=(H - margin.t - margin.b);
+  const needX=(maxX-minX)+2*pad; const needY=(maxY-minY)+2*pad;
+  const scaleAuto=Math.max(30, Math.min(availX/Math.max(needX,0.01), availY/Math.max(needY,0.01)));
+  pxPerM = scaleAuto; const scale=pxPerM;
+  const worldCx=(minX+maxX)/2, worldCy=(minY+maxY)/2; const canvasCx=margin.l+availX/2, canvasCy=margin.t+availY/2;
+  viewport.ox = canvasCx - scale*worldCx; viewport.oy = canvasCy + scale*worldCy; viewport.scale=scale;
+}
+function toCanvas(x,y){ return {x: viewport.ox + viewport.scale*x, y: viewport.oy - viewport.scale*y}; }
+
+function drawTrackAndGates(){
+  ctx.save();
+  const th=state.thetaDeg*Math.PI/180; const start=state.sStart, end=state.sEnd; const L=end-start;
+  ctx.strokeStyle=document.body.classList.contains('dark') ? '#64748b' : '#475569'; ctx.lineWidth=4; ctx.beginPath(); const p0=toCanvas(0,0); ctx.moveTo(p0.x,p0.y); const p1=toCanvas(L*Math.cos(th), L*Math.sin(th)); ctx.lineTo(p1.x,p1.y); ctx.stroke();
+  ctx.fillStyle='#38b000'; drawGateAt(start, th, true); ctx.fillStyle='#e63946'; drawGateAt(end, th, true);
+  ctx.fillStyle='#f6bd60'; for(const pos of state.gates){ if(pos<start||pos>end) continue; drawGateAt(pos, th, false); }
+  const sRel=state.s-start; const bx=sRel*Math.cos(th), by=sRel*Math.sin(th); const c=toCanvas(bx,by); const bw=0.25*viewport.scale, bh=0.14*viewport.scale;
+  ctx.save(); ctx.translate(c.x,c.y); ctx.rotate(-th); ctx.fillStyle='#ffd166'; ctx.strokeStyle=document.body.classList.contains('dark') ? '#64748b' : '#475569'; ctx.lineWidth=2; ctx.beginPath(); ctx.rect(-bw/2,-bh/2,bw,bh); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle='#f72585'; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.sign(state.v)*Math.min(Math.abs(state.v)*0.25*viewport.scale,80),0); ctx.stroke(); ctx.restore();
+  ctx.strokeStyle=document.body.classList.contains('dark') ? '#334155' : '#cbd5e1'; ctx.fillStyle=document.body.classList.contains('dark') ? '#cbd5e1' : '#475569'; ctx.lineWidth=1; ctx.font='12px Arial';
+  const step = niceStep(Math.abs(L)/8); for(let m=Math.ceil(start/step)*step;m<=end+1e-6;m+=step){ const sRel2=m-start; const px=sRel2*Math.cos(th), py=sRel2*Math.sin(th); const p=toCanvas(px,py); const nx=-Math.sin(th), ny=Math.cos(th);
+    ctx.beginPath(); ctx.moveTo(p.x - nx*6, p.y - ny*6); ctx.lineTo(p.x + nx*6, p.y + ny*6); ctx.stroke(); ctx.fillText(m.toFixed(1), p.x + nx*10 - 10, p.y + ny*10 + 4); }
+  ctx.restore();
+}
+
+function drawGateAt(pos, th, isEndpoint){ const start=state.sStart, sRel=pos-start; const gx=sRel*Math.cos(th), gy=sRel*Math.sin(th); const c=toCanvas(gx,gy); const nx=-Math.sin(th), ny=Math.cos(th);
+  const gateVisHalf=Math.max(2, state.gateWidth*viewport.scale/2); const w=isEndpoint?8:6; ctx.beginPath(); ctx.moveTo(c.x - nx*w, c.y - ny*w); ctx.lineTo(c.x + nx*w, c.y + ny*w);
+  ctx.lineTo(c.x + nx*w - ny*gateVisHalf, c.y + ny*w + nx*gateVisHalf); ctx.lineTo(c.x - nx*w - ny*gateVisHalf, c.y - ny*w + nx*gateVisHalf); ctx.closePath(); ctx.fill(); }
+
+function niceStep(raw){ if(raw<=0) return 0.5; const pow=Math.pow(10,Math.floor(Math.log10(raw))); const n=raw/pow; let step=1; if(n>5) step=10; else if(n>2) step=5; else if(n>1) step=2; else step=1; return step*pow; }
+
+function draw(){ clear(); setViewport(); drawTrackAndGates(); }
+
+resize();
+recomputeAccel();
+resetToStart();
+renderTable();
+draw();
+</script>
+
+
+
+<section class="instructions sim-instructions" aria-label="Instrucciones de la pr&aacute;ctica">
+  <h3>Instrucciones</h3>
+  <ul>
+    <li>Ajusta los par&aacute;metros desde el panel de controles.</li>
+    <li>Observa la respuesta del simulador y compara los resultados.</li>
+    <li>Usa las herramientas de exportaci&oacute;n cuando la pr&aacute;ctica las incluya.</li>
+  </ul>
+</section>
+<footer class="sim-footer">
+  &copy; 2026 Simuladores de F&iacute;sica &mdash; Desarrollado por <strong>MSc. Jorge Chimarro Alvear</strong>
+</footer>
+<script src="../../assets/js/simulator-theme.js"></script>
+</body>
+</html>

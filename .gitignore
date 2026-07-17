@@ -1,0 +1,25 @@
+# Sistema operativo
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editores
+.vscode/
+.idea/
+
+# Dependencias y salidas generadas
+node_modules/
+dist/
+build/
+coverage/
+
+# Archivos temporales
+*.log
+*.tmp
+*.bak
+*.old
+*~
+.prepublish-validator.js
+
+# Copia historica de la plantilla con espacios en la ruta
+plantilla-base/plantilla base/

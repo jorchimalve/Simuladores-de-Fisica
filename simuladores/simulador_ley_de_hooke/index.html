@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ley de Hooke y movimiento arm&oacute;nico simple</title>
+  
+  <meta name="description" content="Relaciona elongaci&oacute;n, fuerza restauradora, energ&iacute;a y oscilaci&oacute;n de un sistema masa-resorte.">
+
+  
+  <link rel="stylesheet" href="../../assets/css/simulator-base.css">
+</head>
+<body>
+<header class="sim-header">
+  <div class="sim-title-group">
+    <h1>Ley de Hooke y movimiento arm&oacute;nico simple</h1>
+    <p class="sim-subtitle">Relaciona elongaci&oacute;n, fuerza restauradora, energ&iacute;a y oscilaci&oacute;n de un sistema masa-resorte.</p>
+  </div>
+  <label class="theme-toggle">
+    <span>Modo oscuro</span>
+    <input type="checkbox" id="themeSwitch">
+  </label>
+</header>
+
+
+  
+
+  <div class="container">
+    <section class="panel controls" aria-label="Controles del simulador">
+      <h2>Modo de simulaci&oacute;n</h2>
+      <div class="buttons mode-box" aria-label="Modo de simulaci&oacute;n">
+        <button id="hookeMode" type="button" class="primary" aria-pressed="true">Ley de Hooke</button>
+        <button id="masMode" type="button" aria-pressed="false">MAS</button>
+      </div>
+      <p class="hint" id="modeHint">La masa cambia de forma progresiva y se observa la elongaci&oacute;n est&aacute;tica desde una posici&oacute;n inicial.</p>
+
+      <h2>Par&aacute;metros del sistema</h2>
+
+      <div class="row">
+        <label for="mRange">Masa final m (kg)</label>
+        <input id="mRange" type="range" min="0.10" max="10.00" step="0.10" value="1.00" />
+        <input id="mNum" class="num" type="number" min="0.10" max="10.00" step="0.10" value="1.00" />
+      </div>
+
+      <div class="row" id="mStartRow">
+        <label for="mStartRange">Masa inicial m0 (kg)</label>
+        <input id="mStartRange" type="range" min="0.10" max="10.00" step="0.10" value="0.50" />
+        <input id="mStartNum" class="num" type="number" min="0.10" max="10.00" step="0.10" value="0.50" />
+      </div>
+
+      <div class="row">
+        <label for="kRange">Constante el&aacute;stica k (N/m)</label>
+        <input id="kRange" type="range" min="5" max="300" step="1" value="50" />
+        <input id="kNum" class="num" type="number" min="5" max="300" step="1" value="50" />
+      </div>
+
+      <div class="row">
+        <label for="gRange">Gravedad g (m/s&sup2;)</label>
+        <input id="gRange" type="range" min="0" max="20" step="0.1" value="9.8" />
+        <input id="gNum" class="num" type="number" min="0" max="20" step="0.1" value="9.8" />
+      </div>
+
+      <div class="row">
+        <label for="L0Range">Longitud natural L0 (m)</label>
+        <input id="L0Range" type="range" min="0.20" max="4.00" step="0.05" value="1.00" />
+        <input id="L0Num" class="num" type="number" min="0.20" max="4.00" step="0.05" value="1.00" />
+      </div>
+
+      <div class="row">
+        <label for="y0Range" id="y0Label">Posici&oacute;n inicial y0 (m)</label>
+        <input id="y0Range" type="range" min="0.20" max="8.00" step="0.01" value="1.20" />
+        <input id="y0Num" class="num" type="number" min="0.20" max="8.00" step="0.01" value="1.20" />
+      </div>
+
+      <div class="row" id="ampRow" style="display:none">
+        <label for="ampRange">Amplitud A (m)</label>
+        <input id="ampRange" type="range" min="0.01" max="2.00" step="0.01" value="0.20" />
+        <input id="ampNum" class="num" type="number" min="0.01" max="2.00" step="0.01" value="0.20" />
+      </div>
+
+      <div class="row">
+        <label for="durRange">Duraci&oacute;n simulada (s)</label>
+        <input id="durRange" type="range" min="2" max="40" step="1" value="20" />
+        <input id="durNum" class="num" type="number" min="2" max="40" step="1" value="20" />
+      </div>
+
+      <div class="switch">
+        <input id="trail" type="checkbox" checked />
+        <label for="trail">Mostrar historial</label>
+      </div>
+
+      <div class="buttons">
+  <button id="btnStart" class="primary">Iniciar</button>
+  <button id="btnPause">Pausar</button>
+  <button id="btnReset" class="danger">Reiniciar</button>
+  <button data-fit-view>Ajustar vista</button>
+  <button id="btnCSV">Descargar CSV</button>
+</div>
+
+      <div class="row">
+        <label for="timeRange">Tiempo (s) - desliza para inspeccionar</label>
+        <input id="timeRange" type="range" min="0" max="20" step="0.01" value="0" />
+        <input id="timeNum" class="num" type="number" min="0" max="20" step="0.01" value="0" />
+      </div>
+
+      <div class="stats grid-2">
+        <div class="card"><span>Elongaci&oacute;n x = mg/k (m)</span><strong id="elongOut">-</strong></div>
+        <div class="card"><span>Posici&oacute;n de equilibrio y<sub>eq</sub> (m)</span><strong id="eqOut">-</strong></div>
+        <div class="card"><span>Per&iacute;odo T (s)</span><strong id="TOut">-</strong></div>
+        <div class="card"><span>Frecuencia f (Hz)</span><strong id="fOut">-</strong></div>
+      </div>
+
+      <h2 style="margin-top:16px">En el instante actual</h2>
+      <div class="stats grid-3">
+        <div class="card"><span>t actual (s)</span><strong id="tNowOut">0.00</strong></div>
+        <div class="card"><span>Posici&oacute;n y (m)</span><strong id="yOut">0.00</strong></div>
+        <div class="card"><span>Velocidad v (m/s)</span><strong id="vOut">0.00</strong></div>
+        <div class="card"><span>Aceleraci&oacute;n a (m/s&sup2;)</span><strong id="aOut">0.00</strong></div>
+        <div class="card"><span>Masa actual (kg)</span><strong id="mOut">-</strong></div>
+        <div class="card"><span>Oscilaciones transcurridas</span><strong id="nOscOut">0.00</strong></div>
+      </div>
+    </section>
+
+    <section class="panel canvas-wrap" aria-label="Escena del simulador">
+      <div class="legend" id="legend">Ley de Hooke: elongaci&oacute;n est&aacute;tica del resorte por cambio progresivo de masa</div>
+      <canvas id="cv"></canvas>
+    </section>
+  </div>
+<div class="footer">
+    Hooke: la masa cambia progresivamente de m0 a m. MAS: la masa final fija define el per&iacute;odo y la oscilaci&oacute;n alrededor del equilibrio.
+  </div>
+
+  <script>
+    const $ = (sel)=>document.querySelector(sel);
+
+    const hookeMode = $('#hookeMode');
+    const masMode = $('#masMode');
+    const mR = $('#mRange'), mN = $('#mNum');
+    const mStartR = $('#mStartRange'), mStartN = $('#mStartNum');
+    const kR = $('#kRange'), kN = $('#kNum');
+    const gR = $('#gRange'), gN = $('#gNum');
+    const L0R = $('#L0Range'), L0N = $('#L0Num');
+    const y0R = $('#y0Range'), y0N = $('#y0Num');
+    const ampR = $('#ampRange'), ampN = $('#ampNum');
+    const durR = $('#durRange'), durN = $('#durNum');
+    const ampRow = $('#ampRow');
+    const mStartRow = $('#mStartRow');
+    const y0Label = $('#y0Label');
+    const trailChk = $('#trail');
+    const modeHint = $('#modeHint');
+    const btnStart = $('#btnStart');
+    const btnPause = $('#btnPause');
+    const btnReset = $('#btnReset');
+    const btnCSV = $('#btnCSV');
+    const timeR = $('#timeRange'), timeN = $('#timeNum');
+    const elongOut = $('#elongOut');
+    const eqOut = $('#eqOut');
+    const TOut = $('#TOut');
+    const fOut = $('#fOut');
+    const tNowOut = $('#tNowOut');
+    const yOut = $('#yOut');
+    const vOut = $('#vOut');
+    const aOut = $('#aOut');
+    const mOut = $('#mOut');
+    const nOscOut = $('#nOscOut');
+    const legend = $('#legend');
+    const cv = document.getElementById('cv');
+    const ctx = cv.getContext('2d');
+
+    let w = 800, h = 500, pxPerM = 80;
+    const margin = {l:70, r:30, t:40, b:40};
+
+    const state = {
+      mode: 'hooke',
+      mStart: 0.5,
+      mTarget: 1.0,
+      k: 50,
+      g: 9.8,
+      L0: 1.0,
+      y0: 1.2,
+      amp: 0.2,
+      simDuration: 20,
+      t: 0,
+      dt: 0.02,
+      playing: false,
+      path: []
+    };
+
+    function syncIO(range, num, setter){
+      const update = (val)=>{
+        const parsed = Number(val);
+        if (!Number.isFinite(parsed)) return;
+        setter(parsed);
+        range.value = String(parsed);
+        num.value = String(parsed);
+        resetSimulation(false);
+      };
+      range.addEventListener('input', e=>update(e.target.value));
+      num.addEventListener('input', e=>update(e.target.value));
+    }
+
+    syncIO(mR, mN, v=>state.mTarget = v);
+    syncIO(mStartR, mStartN, v=>state.mStart = v);
+    syncIO(kR, kN, v=>state.k = v);
+    syncIO(gR, gN, v=>state.g = v);
+    syncIO(L0R, L0N, v=>state.L0 = v);
+    syncIO(y0R, y0N, v=>state.y0 = v);
+    syncIO(ampR, ampN, v=>state.amp = v);
+    syncIO(durR, durN, v=>state.simDuration = v);
+
+    function equilibriumY(m){ return state.L0 + (m * state.g) / state.k; }
+    function period(m){ return 2 * Math.PI * Math.sqrt(m / state.k); }
+    function frequency(m){ const T = period(m); return T > 0 ? 1 / T : 0; }
+
+    function setMode(mode){
+      state.mode = mode;
+      const isHooke = mode === 'hooke';
+      hookeMode.classList.toggle('primary', isHooke);
+      masMode.classList.toggle('primary', !isHooke);
+      hookeMode.setAttribute('aria-pressed', String(isHooke));
+      masMode.setAttribute('aria-pressed', String(!isHooke));
+      ampRow.style.display = isHooke ? 'none' : 'grid';
+      mStartRow.style.display = isHooke ? 'grid' : 'none';
+      y0Label.textContent = isHooke ? 'Posici\u00f3n inicial y0 (m)' : 'Posici\u00f3n base inicial y0 (m)';
+      legend.textContent = isHooke
+        ? 'Ley de Hooke: elongaci\u00f3n est\u00e1tica del resorte por cambio progresivo de masa'
+        : 'MAS: oscilaci\u00f3n vertical masa-resorte alrededor de la posici\u00f3n de equilibrio';
+      modeHint.textContent = isHooke
+        ? 'La masa cambia de forma progresiva y se observa la elongaci\u00f3n est\u00e1tica desde una posici\u00f3n inicial.'
+        : 'La masa-resorte oscila y se reporta el tiempo de oscilaci\u00f3n, el per\u00edodo y el movimiento instant\u00e1neo.';
+      resetSimulation(false);
+    }
+
+    hookeMode.addEventListener('click', ()=>setMode('hooke'));
+    masMode.addEventListener('click', ()=>setMode('mas'));
+
+    trailChk.addEventListener('change', draw);
+
+    function buildPath(){
+      const path = [];
+      const steps = Math.max(200, Math.round(state.simDuration / state.dt));
+      const dt = state.simDuration / steps;
+      for (let i = 0; i <= steps; i++) {
+        const t = i * dt;
+        if (state.mode === 'hooke') {
+          const m = state.mStart + (state.mTarget - state.mStart) * (i / steps);
+          const yEq = equilibriumY(m);
+          const y = state.y0 + (yEq - state.y0) * (i / steps);
+          const v = (yEq - state.y0) / Math.max(state.simDuration, 1e-9);
+          path.push({ t, mode:'Hooke', m, y, v, a:0, yEq, elong:(m * state.g) / state.k });
+        } else {
+          const m = state.mTarget;
+          const yEq = equilibriumY(m);
+          const omega = Math.sqrt(state.k / m);
+          const y = yEq + state.amp * Math.cos(omega * t);
+          const v = -state.amp * omega * Math.sin(omega * t);
+          const a = -state.amp * omega * omega * Math.cos(omega * t);
+          path.push({ t, mode:'MAS', m, y, v, a, yEq, elong:(m * state.g) / state.k });
+        }
+      }
+      state.path = path;
+    }
+
+    function sampleAt(t){
+      const path = state.path;
+      if (!path.length) return { t:0, mode:'', m:state.mTarget, y:0, v:0, a:0, yEq:0, elong:0 };
+      if (t <= path[0].t) return path[0];
+      if (t >= path[path.length - 1].t) return path[path.length - 1];
+      let lo = 0, hi = path.length - 1;
+      while (lo + 1 < hi) {
+        const mid = (lo + hi) >> 1;
+        if (path[mid].t <= t) lo = mid; else hi = mid;
+      }
+      const a = path[lo], b = path[hi];
+      const f = (t - a.t) / (b.t - a.t);
+      return {
+        t,
+        mode: a.mode,
+        m: a.m + f * (b.m - a.m),
+        y: a.y + f * (b.y - a.y),
+        v: a.v + f * (b.v - a.v),
+        a: a.a + f * (b.a - a.a),
+        yEq: a.yEq + f * (b.yEq - a.yEq),
+        elong: a.elong + f * (b.elong - a.elong)
+      };
+    }
+
+    function updateCards(){
+      const mRef = state.mTarget;
+      elongOut.textContent = ((mRef * state.g) / state.k).toFixed(3);
+      eqOut.textContent = equilibriumY(mRef).toFixed(3);
+      TOut.textContent = period(mRef).toFixed(3);
+      fOut.textContent = frequency(mRef).toFixed(3);
+      const s = sampleAt(state.t);
+      tNowOut.textContent = state.t.toFixed(2);
+      yOut.textContent = s.y.toFixed(3);
+      vOut.textContent = s.v.toFixed(3);
+      aOut.textContent = s.a.toFixed(3);
+      mOut.textContent = s.m.toFixed(3);
+      nOscOut.textContent = state.mode === 'mas' ? (state.t / Math.max(period(s.m), 1e-9)).toFixed(2) : '-';
+    }
+
+    function updateScale(){
+      const maxY = state.path.reduce((acc, p)=>Math.max(acc, p.y, p.yEq), 2);
+      pxPerM = Math.max(35, Math.min(140, (h - margin.t - margin.b) / Math.max(2.5, maxY + 0.8)));
+    }
+
+    function worldToCanvasY(y){ return margin.t + y * pxPerM; }
+
+    function clear(){
+      const grd = ctx.createLinearGradient(0,0,0,h);
+      const canvasBg = document.body.classList.contains('dark') ? '#111827' : '#ffffff';
+      grd.addColorStop(0, canvasBg);
+      grd.addColorStop(1, canvasBg);
+      ctx.fillStyle = grd;
+      ctx.fillRect(0,0,w,h);
+    }
+
+    function niceStep(raw){
+      const safe = Math.max(raw, 0.001);
+      const pow = Math.pow(10, Math.floor(Math.log10(safe)));
+      const n = safe / pow;
+      let step = 1;
+      if (n > 5) step = 10; else if (n > 2) step = 5; else if (n > 1) step = 2;
+      return step * pow;
+    }
+
+    function drawAxis(){
+      ctx.save();
+      ctx.strokeStyle = document.body.classList.contains('dark') ? '#334155' : '#cbd5e1';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(margin.l, margin.t);
+      ctx.lineTo(margin.l, h - margin.b);
+      ctx.stroke();
+      ctx.fillStyle = document.body.classList.contains('dark') ? '#cbd5e1' : '#475569';
+      ctx.font = '12px Arial';
+      const visibleM = (h - margin.t - margin.b) / pxPerM;
+      const step = niceStep(visibleM / 6);
+      for (let ym = 0; ym <= visibleM + 1e-6; ym += step) {
+        const cy = worldToCanvasY(ym);
+        ctx.beginPath();
+        ctx.moveTo(margin.l - 4, cy);
+        ctx.lineTo(margin.l + 4, cy);
+        ctx.stroke();
+        ctx.fillText(ym.toFixed(1), margin.l - 42, cy + 4);
+      }
+      ctx.restore();
+    }
+
+    function drawSpring(yTop, yBottom, xCenter){
+      const turns = 12;
+      const amplitude = 14;
+      const len = Math.max(20, yBottom - yTop - 10);
+      const step = len / turns;
+      ctx.save();
+      ctx.strokeStyle = '#4cc9f0';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(xCenter, yTop);
+      for (let i = 1; i <= turns; i++) {
+        const yi = yTop + i * step;
+        const xi = xCenter + (i % 2 === 0 ? amplitude : -amplitude);
+        ctx.lineTo(xi, yi);
+      }
+      ctx.lineTo(xCenter, yBottom);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawMass(yCenter, xCenter){
+      const width = 84, height = 48;
+      const left = xCenter - width / 2, top = yCenter - height / 2;
+      ctx.save();
+      ctx.fillStyle = '#00000055';
+      ctx.beginPath();
+      ctx.ellipse(xCenter, top + height + 10, width * 0.4, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      const grd = ctx.createLinearGradient(left, top, left, top + height);
+      grd.addColorStop(0,'#8fb7ff');
+      grd.addColorStop(1,'#335d9a');
+      ctx.fillStyle = grd;
+      ctx.strokeStyle = document.body.classList.contains('dark') ? '#64748b' : '#475569';
+      ctx.lineWidth = 2;
+      ctx.fillRect(left, top, width, height);
+      ctx.strokeRect(left, top, width, height);
+      ctx.fillStyle = document.body.classList.contains('dark') ? '#f1f5f9' : '#111827';
+      ctx.font = 'bold 13px Arial';
+      ctx.fillText('m', xCenter - 5, yCenter + 5);
+      ctx.restore();
+    }
+
+    function drawPath(){
+      if (!trailChk.checked || state.path.length === 0) return;
+      const x = Math.min(w - 100, margin.l + 160);
+      ctx.save();
+      ctx.strokeStyle = '#f72585';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < state.path.length; i++) {
+        const py = worldToCanvasY(state.path[i].y);
+        const px = x + Math.sin(i / 12) * 8;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function draw(){
+      clear();
+      drawAxis();
+      drawPath();
+      const xCenter = Math.min(w - 120, margin.l + 220);
+      const s = sampleAt(state.t);
+      const yEqCanvas = worldToCanvasY(s.yEq);
+      const yCanvas = worldToCanvasY(s.y);
+
+      ctx.save();
+      ctx.strokeStyle = document.body.classList.contains('dark') ? '#64748b' : '#475569';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(xCenter - 70, margin.t);
+      ctx.lineTo(xCenter + 70, margin.t);
+      ctx.stroke();
+      ctx.restore();
+
+      drawSpring(margin.t + 6, yCanvas - 26, xCenter);
+      drawMass(yCanvas, xCenter);
+
+      ctx.save();
+      ctx.setLineDash([6,4]);
+      ctx.strokeStyle = '#a1ff6e';
+      ctx.beginPath();
+      ctx.moveTo(xCenter - 95, yEqCanvas);
+      ctx.lineTo(w - 40, yEqCanvas);
+      ctx.stroke();
+      ctx.fillStyle = '#a1ff6e';
+      ctx.font = '12px Arial';
+      ctx.fillText('y_eq', w - 70, yEqCanvas - 6);
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = '#ffd166';
+      ctx.setLineDash([4,4]);
+      const yL0 = worldToCanvasY(state.L0);
+      ctx.beginPath();
+      ctx.moveTo(xCenter - 95, yL0);
+      ctx.lineTo(w - 40, yL0);
+      ctx.stroke();
+      ctx.fillStyle = '#ffd166';
+      ctx.font = '12px Arial';
+      ctx.fillText('L0', w - 60, yL0 - 6);
+      ctx.restore();
+
+      updateCards();
+      timeR.value = String(state.t);
+      timeN.value = state.t.toFixed(2);
+    }
+
+    function resize(){
+      const rect = cv.parentElement.getBoundingClientRect();
+      w = Math.max(320, Math.floor(rect.width));
+      h = Math.max(260, Math.floor(rect.height));
+      const dpr = window.devicePixelRatio || 1;
+      cv.width = Math.floor(w * dpr);
+      cv.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      updateScale();
+      draw();
+    }
+    window.addEventListener('resize', resize);
+
+    function csvFromPath(path){
+      const rows = ['t,modo,masa,posicion,velocidad,aceleracion,posicion_equilibrio,elongacion,periodo'];
+      for (const p of path) {
+        rows.push(`${p.t.toFixed(4)},${p.mode},${p.m.toFixed(4)},${p.y.toFixed(4)},${p.v.toFixed(4)},${p.a.toFixed(4)},${p.yEq.toFixed(4)},${p.elong.toFixed(4)},${period(p.m).toFixed(4)}`);
+      }
+      return rows.join('\n');
+    }
+
+    btnCSV.addEventListener('click', ()=>{
+      if (!state.path.length) return;
+      const csv = csvFromPath(state.path);
+      const blob = new Blob([csv], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = state.mode === 'hooke' ? 'ley_hooke_datos.csv' : 'mas_datos.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    function syncTime(val){
+      state.t = Math.max(0, Math.min(Number(val) || 0, state.simDuration));
+      state.playing = false;
+      btnStart.textContent = 'Reanudar';
+      draw();
+    }
+    timeR.addEventListener('input', e=>syncTime(e.target.value));
+    timeN.addEventListener('input', e=>syncTime(e.target.value));
+
+    let lastTS = 0;
+    function loop(ts){
+      if (!state.playing) { draw(); return; }
+      if (!lastTS) lastTS = ts;
+      const dt = (ts - lastTS) / 1000;
+      lastTS = ts;
+      state.t += dt;
+      if (state.t >= state.simDuration) {
+        state.t = state.simDuration;
+        state.playing = false;
+        btnStart.textContent = 'Iniciar';
+      }
+      draw();
+      if (state.playing) requestAnimationFrame(loop);
+    }
+
+    btnStart.addEventListener('click', ()=>{
+      if (!state.playing) {
+        state.playing = true;
+        lastTS = 0;
+        btnStart.textContent = 'Reanudar';
+        requestAnimationFrame(loop);
+      }
+    });
+
+    btnPause.addEventListener('click', ()=>{
+      state.playing = false;
+      btnStart.textContent = 'Reanudar';
+      draw();
+    });
+
+    function resetSimulation(redraw = true){
+      state.playing = false;
+      state.t = 0;
+      btnStart.textContent = 'Iniciar';
+      buildPath();
+      updateScale();
+      timeR.max = String(state.simDuration);
+      timeN.max = String(state.simDuration);
+      if (redraw) draw();
+    }
+
+    btnReset.addEventListener('click', ()=>resetSimulation(true));
+    setMode('hooke');
+    resetSimulation(false);
+    resize();
+  </script>
+
+
+
+<section class="instructions sim-instructions" aria-label="Instrucciones de la pr&aacute;ctica">
+  <h3>Instrucciones</h3>
+  <ul>
+    <li>Ajusta los par&aacute;metros desde el panel de controles.</li>
+    <li>Observa la respuesta del simulador y compara los resultados.</li>
+    <li>Usa las herramientas de exportaci&oacute;n cuando la pr&aacute;ctica las incluya.</li>
+  </ul>
+</section>
+<footer class="sim-footer">
+  &copy; 2026 Simuladores de F&iacute;sica &mdash; Desarrollado por <strong>MSc. Jorge Chimarro Alvear</strong>
+</footer>
+<script src="../../assets/js/simulator-theme.js"></script>
+</body>
+</html>

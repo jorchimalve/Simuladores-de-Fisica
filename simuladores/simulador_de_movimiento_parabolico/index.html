@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Movimiento parab&oacute;lico</title>
+  
+  <meta name="description" content="Explora trayectoria, alcance y altura m&aacute;xima variando velocidad inicial, &aacute;ngulo y gravedad.">
+
+  
+  <link rel="stylesheet" href="../../assets/css/simulator-base.css">
+</head>
+<body>
+<header class="sim-header">
+  <div class="sim-title-group">
+    <h1>Movimiento parab&oacute;lico</h1>
+    <p class="sim-subtitle">Explora trayectoria, alcance y altura m&aacute;xima variando velocidad inicial, &aacute;ngulo y gravedad.</p>
+  </div>
+  <label class="theme-toggle">
+    <span>Modo oscuro</span>
+    <input type="checkbox" id="themeSwitch">
+  </label>
+</header>
+
+
+  
+
+  <div class="container">
+    <!-- Panel de controles -->
+    <section class="panel controls" aria-label="Controles del simulador">
+      <h2>Par&aacute;metros del disparo</h2>
+
+      <div class="row">
+        <label for="velRange">Velocidad inicial (m/s)</label>
+        <input id="velRange" type="range" min="1" max="120" step="1" value="30" />
+        <input id="velNum" class="num" type="number" min="1" max="120" step="1" value="30" />
+      </div>
+
+      <div class="row">
+        <label for="angRange">&Aacute;ngulo (&deg;)</label>
+        <input id="angRange" type="range" min="0" max="90" step="0.5" value="45" />
+        <input id="angNum" class="num" type="number" min="0" max="90" step="0.5" value="45" />
+      </div>
+
+      <div class="row">
+        <label for="y0Range">Altura inicial y0 (m)</label>
+        <input id="y0Range" type="range" min="0" max="50" step="0.1" value="0" />
+        <input id="y0Num" class="num" type="number" min="0" max="50" step="0.1" value="0" />
+      </div>
+
+      <div class="row">
+        <label for="gRange">Gravedad (m/s&sup2;)</label>
+        <input id="gRange" type="range" min="1" max="20" step="0.1" value="9.8" />
+        <input id="gNum" class="num" type="number" min="1" max="20" step="0.1" value="9.8" />
+      </div>
+
+      <div class="switch">
+        <input id="dragToggle" type="checkbox" />
+        <label for="dragToggle">Activar viento/rozamiento (arrastre cuadr&aacute;tico)</label>
+      </div>
+      <div id="dragBox" style="display:none">
+        <div class="row">
+          <label for="kRange">Coeficiente de arrastre k (1/m)</label>
+          <input id="kRange" type="range" min="0.000" max="0.200" step="0.001" value="0.020" />
+          <input id="kNum" class="num" type="number" min="0" max="0.200" step="0.001" value="0.020" />
+        </div>
+        <div class="row">
+          <label for="windRange">Viento (m/s) + cola / - frente</label>
+          <input id="windRange" type="range" min="-40" max="40" step="1" value="0" />
+          <input id="windNum" class="num" type="number" min="-40" max="40" step="1" value="0" />
+        </div>
+        <p class="sub">Modelo: F<sub>d</sub> = -m&middot;k&middot;|v - v<sub>viento</sub>|&middot;(v - v<sub>viento</sub>). k = &rho;C<sub>d</sub>A/(2m).</p>
+      </div>
+
+      <div class="switch">
+        <input id="trail" type="checkbox" checked />
+        <label for="trail">Mostrar trayectoria completa</label>
+      </div>
+
+      <div id="axesControls" style="display:none">
+        <div class="row">
+          <label for="xRangeView">Rango eje X (m)</label>
+          <input id="xRangeView" type="range" min="5" max="1000" step="5" value="120" />
+          <input id="xRangeNum" class="num" type="number" min="5" max="1000" step="5" value="120" />
+        </div>
+        <div class="row">
+          <label for="yRangeView">Rango eje Y (m)</label>
+          <input id="yRangeView" type="range" min="5" max="400" step="1" value="60" />
+          <input id="yRangeNum" class="num" type="number" min="5" max="400" step="1" value="60" />
+        </div>
+        <p class="sub">Define el tama&ntilde;o visible de los ejes cuando el autoajuste est&aacute; desactivado.</p>
+      </div>
+
+      <div class="buttons">
+        <button id="btnLaunch" class="primary">Iniciar</button>
+        <button id="btnPause">Pausar</button>
+        <button id="btnReset" class="danger">Reiniciar</button>
+        <button id="btnFit" data-fit-view>Ajustar vista</button>
+        <button id="btnCSV">Descargar CSV</button>
+      </div>
+
+      <div class="row">
+        <label for="timeRange">Tiempo (s) - desliza para inspeccionar</label>
+        <input id="timeRange" type="range" min="0" max="5" step="0.01" value="0" />
+        <input id="timeNum" class="num" type="number" min="0" max="5" step="0.01" value="0" />
+      </div>
+
+      <div class="stats">
+        <div class="card"><span>Alcance (m)</span><strong id="rangeOut">-</strong></div>
+        <div class="card"><span>Altura m&aacute;x. (m)</span><strong id="hmaxOut">-</strong></div>
+        <div class="card"><span>Tiempo de vuelo (s)</span><strong id="tOut">-</strong></div>
+        <div class="card"><span>t actual (s)</span><strong id="tcOut">0.00</strong></div>
+      </div>
+
+      <h2 style="margin-top:16px">En el instante actual</h2>
+      <div class="stats grid-3">
+        <div class="card"><span>x (m)</span><strong id="xOut">0.00</strong></div>
+        <div class="card"><span>y (m)</span><strong id="yOut">0.00</strong></div>
+        <div class="card"><span>|v| (m/s)</span><strong id="vOut">0.00</strong></div>
+        <div class="card"><span>v<sub>x</sub> (m/s)</span><strong id="vxOut">0.00</strong></div>
+        <div class="card"><span>v<sub>y</sub> (m/s)</span><strong id="vyOut">0.00</strong></div>
+        <div class="card"><span>&Aacute;ngulo instant&aacute;neo (&deg;)</span><strong id="thOut">0.0</strong></div>
+      </div>
+    </section>
+
+    <!-- Lienzo -->
+    <section class="panel canvas-wrap" aria-label="Escena del simulador">
+        <div class="legend">Ejes: X (m), Y (m)</div>
+      <canvas id="cv"></canvas>
+    </section>
+  </div>
+<div class="footer">
+    Consejo: pausa y usa el deslizador de tiempo para leer x, y, v, v<sub>x</sub>, v<sub>y</sub> en ese momento. Usa Ajustar vista para recuperar la escena completa. <span class="hint">Con rozamiento activo, el alcance y el tiempo se calculan por integraci&oacute;n num&eacute;rica (RK4).</span>
+  </div>
+
+  <script>
+    // ------- Utilidades -------
+    const $ = (sel)=>document.querySelector(sel);
+    const velR = $('#velRange'), velN = $('#velNum');
+    const angR = $('#angRange'), angN = $('#angNum');
+    const y0R  = $('#y0Range'),  y0N  = $('#y0Num');
+    const gR   = $('#gRange'),   gN   = $('#gNum');
+
+    const dragToggle = $('#dragToggle');
+    const dragBox = $('#dragBox');
+    const kR = $('#kRange'), kN = $('#kNum');
+    const windR = $('#windRange'), windN = $('#windNum');
+
+    const trailChk = $('#trail');
+    const btnFit = $('#btnFit');
+    const axesControls = $('#axesControls');
+    const xRangeView = $('#xRangeView'), xRangeNum = $('#xRangeNum');
+    const yRangeView = $('#yRangeView'), yRangeNum = $('#yRangeNum');
+    const timeR = $('#timeRange'), timeN = $('#timeNum');
+
+    const btnLaunch = $('#btnLaunch');
+    const btnPause  = $('#btnPause');
+    const btnReset  = $('#btnReset');
+    const btnCSV    = $('#btnCSV');
+
+    const rangeOut = $('#rangeOut');
+    const hmaxOut = $('#hmaxOut');
+    const tOut = $('#tOut');
+    const tcOut = $('#tcOut');
+
+    const xOut = $('#xOut');
+    const yOut = $('#yOut');
+    const vOut = $('#vOut');
+    const vxOut = $('#vxOut');
+    const vyOut = $('#vyOut');
+    const thOut = $('#thOut');
+
+    const cv = document.getElementById('cv');
+    const ctx = cv.getContext('2d');
+
+    let w, h; // tama&ntilde;o canvas px
+    let pxPerM = 50; // escala (px por metro)
+    const margin = {l:40, r:20, t:20, b:40};
+
+    const state = {
+      v0: 30,
+      angDeg: 45,
+      y0: 0,
+      g: 9.8,
+      useDrag: false,
+      k: 0.02, // 1/m
+      windX: 0, // m/s
+      t: 0,
+      playing: false,
+      tFlight: 0,
+      range: 0,
+      hmax: 0,
+      path: [], // [{t,x,y,vx,vy}]
+      dt: 0.01,
+      autoAxes: true,
+      xRange: 120,
+      yRange: 60
+    };
+
+    function syncIO(range, num, setter){
+      const update = (val)=>{ setter(+val); range.value = val; num.value = val; compute(); draw(); };
+      range.addEventListener('input', e=>update(e.target.value));
+      num.addEventListener('input',  e=>update(e.target.value));
+    }
+
+    syncIO(velR, velN, v=>state.v0=v);
+    syncIO(angR, angN, a=>state.angDeg=a);
+    syncIO(y0R,  y0N,  y=>state.y0=y);
+    syncIO(gR,   gN,   g=>state.g=g);
+    syncIO(kR,   kN,   k=>state.k=k);
+    syncIO(windR,windN,wx=>state.windX=wx);
+    syncIO(xRangeView, xRangeNum, xr=>state.xRange=xr);
+    syncIO(yRangeView, yRangeNum, yr=>state.yRange=yr);
+
+    dragToggle.addEventListener('change', ()=>{
+      state.useDrag = dragToggle.checked;
+      dragBox.style.display = state.useDrag ? 'block' : 'none';
+      compute(); draw();
+    });
+
+    btnFit.addEventListener('click', ()=>{
+      state.autoAxes = true;
+      axesControls.style.display = 'none';
+      compute(); draw();
+    });
+
+    // Tiempo: al moverlo se pausa y se posiciona el instante
+    function syncTime(val){
+      state.t = Math.min(state.tFlight, Math.max(0, +val));
+      timeR.value = state.t; timeN.value = state.t.toFixed(2);
+      state.playing = false; btnLaunch.textContent = 'Reanudar';
+      draw();
+    }
+    timeR.addEventListener('input', e=>syncTime(e.target.value));
+    timeN.addEventListener('input', e=>syncTime(e.target.value));
+
+    // Ajustar tama&ntilde;o del canvas
+    function resize(){
+      const rect = cv.parentElement.getBoundingClientRect();
+      w = Math.max(320, Math.floor(rect.width));
+      h = Math.max(260, Math.floor(rect.height));
+      const dpr = window.devicePixelRatio || 1;
+      cv.width = Math.floor(w * dpr);
+      cv.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      compute(); draw();
+    }
+    window.addEventListener('resize', resize);
+
+    // --------- L&oacute;gica CSV reutilizable + tests ---------
+    function csvFromPath(path){
+      const rows = ['t,x,y,vx,vy,speed'];
+      for (const p of path){
+        const speed = Math.hypot(p.vx, p.vy);
+        rows.push(`${p.t.toFixed(4)},${p.x.toFixed(4)},${p.y.toFixed(4)},${p.vx.toFixed(4)},${p.vy.toFixed(4)},${speed.toFixed(4)}`);
+      }
+      return rows.join('\n'); // correcci&oacute;n de salto de l&iacute;nea
+    }
+    // F&iacute;sica y simulaci&oacute;n
+    function compute(){
+      const v = state.v0;
+      const th = state.angDeg * Math.PI/180;
+      const g = state.g;
+      const vx0 = v * Math.cos(th);
+      const vy0 = v * Math.sin(th);
+      const y0 = state.y0;
+
+      if (!state.useDrag){
+        // Anal-tico sin rozamiento
+        const disc = vy0*vy0 + 2*g*y0;
+        const tFlight = (vy0 + Math.sqrt(Math.max(0,disc))) / g; // ra-z positiva
+        const range = vx0 * tFlight;
+        const hmax = y0 + (vy0*vy0)/(2*g);
+
+        state.tFlight = Math.max(0, tFlight);
+        state.range = Math.max(0, range);
+        state.hmax = Math.max(y0, hmax);
+
+        // Path uniforme para muestreo/inspecci-n
+        const steps = Math.max(50, Math.ceil(state.tFlight/state.dt));
+        const dt = (state.tFlight)/steps || state.dt;
+        state.dt = dt;
+        state.path = [];
+        for(let i=0;i<=steps;i++){
+          const t = i*dt;
+          const x = vx0*t;
+          const y = y0 + vy0*t - 0.5*g*t*t;
+          const vx = vx0;
+          const vy = vy0 - g*t;
+          state.path.push({t,x,y, vx, vy});
+        }
+      } else {
+        // Num-rico con arrastre cuadr&aacute;tico y viento horizontal
+        const k = state.k; // 1/m
+        const windX = state.windX;
+        const dt = 0.01; // fijo para estabilidad
+        state.dt = dt;
+        let t = 0;
+        let x = 0, y = y0;
+        let vx = vx0, vy = vy0;
+        let hmax = y0;
+        state.path = [{t,x,y,vx,vy}];
+        let landed = false;
+
+        function acc(vx, vy){
+          // v_rel = v - v_wind
+          const vrx = vx - windX;
+          const vry = vy - 0;
+          const vrel = Math.hypot(vrx, vry);
+          const ax = -k * vrel * vrx;
+          const ay = -g - k * vrel * vry;
+          return {ax, ay};
+        }
+        // RK4 integrador
+        function stepRK4(x,y,vx,vy,dt){
+          const a1 = acc(vx,vy);
+          const k1x = vx, k1y = vy, k1vx = a1.ax, k1vy = a1.ay;
+
+          const a2 = acc(vx + 0.5*dt*k1vx, vy + 0.5*dt*k1vy);
+          const k2x = vx + 0.5*dt*k1vx, k2y = vy + 0.5*dt*k1vy, k2vx = a2.ax, k2vy = a2.ay;
+
+          const a3 = acc(vx + 0.5*dt*k2vx, vy + 0.5*dt*k2vy);
+          const k3x = vx + 0.5*dt*k2vx, k3y = vy + 0.5*dt*k2vy, k3vx = a3.ax, k3vy = a3.ay;
+
+          const a4 = acc(vx + dt*k3vx, vy + dt*k3vy);
+          const k4x = vx + dt*k3vx, k4y = vy + dt*k3vy, k4vx = a4.ax, k4vy = a4.ay;
+
+          const nx = x + dt*(k1x + 2*k2x + 2*k3x + k4x)/6;
+          const ny = y + dt*(k1y + 2*k2y + 2*k3y + k4y)/6;
+          const nvx = vx + dt*(k1vx + 2*k2vx + 2*k3vx + k4vx)/6;
+          const nvy = vy + dt*(k1vy + 2*k2vy + 2*k3vy + k4vy)/6;
+          return {nx,ny,nvx,nvy};
+        }
+
+        while (t < 120){ // l-mite de seguridad
+          const next = stepRK4(x,y,vx,vy,dt);
+          x = next.nx; y = next.ny; vx = next.nvx; vy = next.nvy; t += dt;
+          hmax = Math.max(hmax, y);
+          state.path.push({t,x,y,vx,vy});
+          if (y<=0 && t>0){
+            // Interpolaci&oacute;n lineal al cruce con el suelo
+            const last = state.path[state.path.length-2];
+            const f = last.y/(last.y - y);
+            const tLand = last.t + f*(t - last.t);
+            const xLand = last.x + f*(x - last.x);
+            const vLandx = last.vx + f*(vx - last.vx);
+            const vLandy = last.vy + f*(vy - last.vy);
+            state.tFlight = tLand;
+            state.range = Math.max(0, xLand);
+            state.hmax = Math.max(y0, hmax);
+            // Ajustar -ltimo punto a y=0 exacto
+            state.path[state.path.length-1] = {t:tLand, x:xLand, y:0, vx:vLandx, vy:vLandy};
+            break;
+          }
+        }
+        if (state.tFlight===0){
+          state.tFlight = t;
+          state.range = x;
+          state.hmax = Math.max(y0, hmax);
+        }
+      }
+
+      // Escala
+      let xMax, yMax;
+      if (state.autoAxes){
+        const maxX = Math.max(...state.path.map(p=>p.x));
+        const maxY = Math.max(...state.path.map(p=>p.y));
+        xMax = Math.max(5, maxX*1.05 + 1);
+        yMax = Math.max(5, maxY*1.2 + 1);
+      } else {
+        xMax = Math.max(5, state.xRange);
+        yMax = Math.max(5, state.yRange);
+      }
+      const scaleX = (w - margin.l - margin.r) / xMax;
+      const scaleY = (h - margin.t - margin.b) / yMax;
+      pxPerM = Math.max(5, Math.min(scaleX, scaleY));
+
+      // Actualizar tarjetas globales
+      rangeOut.textContent = state.range.toFixed(2);
+      hmaxOut.textContent = state.hmax.toFixed(2);
+      tOut.textContent = state.tFlight.toFixed(2);
+
+      // Actualizar tope del control de tiempo
+      timeR.max = Math.max(0.01, state.tFlight);
+      timeN.max = timeR.max;
+
+      // Limitar t si cambi- el vuelo
+      if (state.t > state.tFlight){ state.t = state.tFlight; }
+      timeR.value = state.t; timeN.value = state.t.toFixed(2);
+    }
+
+    function sampleAt(t){
+      // Interpola en la trayectoria ya calculada
+      const path = state.path;
+      if (path.length===0) return {t:0,x:0,y:0,vx:0,vy:0};
+      if (t<=path[0].t) return path[0];
+      if (t>=path[path.length-1].t) return path[path.length-1];
+      // b-squeda binaria sencilla
+      let lo=0, hi=path.length-1;
+      while (lo+1<hi){
+        const mid = (lo+hi)>>1;
+        (path[mid].t <= t) ? lo=mid : hi=mid;
+      }
+      const a = path[lo], b = path[hi];
+      const f = (t - a.t)/(b.t - a.t);
+      return {
+        t,
+        x: a.x + f*(b.x - a.x),
+        y: a.y + f*(b.y - a.y),
+        vx: a.vx + f*(b.vx - a.vx),
+        vy: a.vy + f*(b.vy - a.vy)
+      };
+    }
+
+    function worldToCanvas(pt){
+      const cx = margin.l + pt.x * pxPerM;
+      const cy = h - margin.b - pt.y * pxPerM;
+      return {x:cx, y:cy};
+    }
+
+    function drawAxes(){
+      ctx.save();
+      ctx.strokeStyle = document.body.classList.contains('dark') ? '#334155' : '#cbd5e1';
+      ctx.lineWidth = 1;
+      // eje X (suelo)
+      ctx.beginPath();
+      ctx.moveTo(margin.l, h - margin.b);
+      ctx.lineTo(w - margin.r, h - margin.b);
+      ctx.stroke();
+
+      // eje Y
+      ctx.beginPath();
+      ctx.moveTo(margin.l, h - margin.b);
+      ctx.lineTo(margin.l, margin.t);
+      ctx.stroke();
+
+      // marcas bonitas
+      ctx.fillStyle = document.body.classList.contains('dark') ? '#cbd5e1' : '#475569';
+      ctx.font = '12px Arial';
+      const xStepM = niceStep((w - margin.l - margin.r)/pxPerM/6);
+      const yStepM = niceStep((h - margin.t - margin.b)/pxPerM/6);
+      const xMaxPx = w - margin.l - margin.r;
+      const yMaxPx = h - margin.t - margin.b;
+      const xMaxM = xMaxPx/pxPerM;
+      const yMaxM = yMaxPx/pxPerM;
+
+      for (let xm = 0; xm <= xMaxM + 1e-6; xm+=xStepM){
+        const p = worldToCanvas({x:xm,y:0});
+        ctx.beginPath();
+        ctx.moveTo(p.x, h - margin.b - 4);
+        ctx.lineTo(p.x, h - margin.b + 4);
+        ctx.strokeStyle = document.body.classList.contains('dark') ? '#334155' : '#cbd5e1';
+        ctx.stroke();
+        ctx.fillText(xm.toFixed(0), p.x-6, h - margin.b + 16);
+      }
+      for (let ym = 0; ym <= yMaxM + 1e-6; ym+=yStepM){
+        const p = worldToCanvas({x:0,y:ym});
+        ctx.beginPath();
+        ctx.moveTo(margin.l-4, p.y);
+        ctx.lineTo(margin.l+4, p.y);
+        ctx.strokeStyle = document.body.classList.contains('dark') ? '#334155' : '#cbd5e1';
+        ctx.stroke();
+        if(ym>0) ctx.fillText(ym.toFixed(0), margin.l-26, p.y+4);
+      }
+      ctx.restore();
+    }
+
+    function niceStep(raw){
+      const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+      const n = raw / pow;
+      let step = 1;
+      if (n > 5) step = 10; else if (n > 2) step = 5; else if (n > 1) step = 2; else step = 1;
+      return step * pow;
+    }
+
+    function clear(){
+      const grd = ctx.createLinearGradient(0,0,0,h);
+      const canvasBg = document.body.classList.contains('dark') ? '#111827' : '#ffffff';
+      grd.addColorStop(0, canvasBg);
+      grd.addColorStop(1, canvasBg);
+      ctx.fillStyle = grd;
+      ctx.fillRect(0,0,w,h);
+    }
+
+    function draw(){
+      clear();
+      drawAxes();
+
+      // Trazo completo
+      if (trailChk.checked && state.path.length){
+        ctx.save();
+        ctx.strokeStyle = '#4cc9f0';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const p0 = worldToCanvas({x:state.path[0].x,y:state.path[0].y});
+        ctx.moveTo(p0.x, p0.y);
+        for(const pt of state.path){
+          const cpt = worldToCanvas(pt);
+          ctx.lineTo(cpt.x, cpt.y);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Punto en tiempo actual
+      const t = state.t;
+      const s = sampleAt(t);
+      const landed = t>=state.tFlight;
+      const showPt = landed ? {x: state.range, y: 0, vx:s.vx, vy:s.vy} : s;
+      const c = worldToCanvas(showPt);
+
+      // Vector velocidad
+      const vmag = Math.hypot(showPt.vx, showPt.vy);
+      const thInst = Math.atan2(showPt.vy, showPt.vx) * 180/Math.PI;
+      const vScale = 0.3;
+      ctx.save();
+      ctx.strokeStyle = '#f72585';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(c.x, c.y);
+      ctx.lineTo(c.x + (showPt.vx*vScale)*pxPerM, c.y - (showPt.vy*vScale)*pxPerM);
+      ctx.stroke();
+      ctx.restore();
+
+      // proyectil
+      ctx.save();
+      ctx.fillStyle = '#ffd166';
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, 6, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+
+      // suelo
+      ctx.save();
+      ctx.strokeStyle = document.body.classList.contains('dark') ? '#64748b' : '#475569';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(margin.l, h - margin.b);
+      ctx.lineTo(w - margin.r, h - margin.b);
+      ctx.stroke();
+      ctx.restore();
+
+      // UI: tiempo y magnitudes instant&aacute;neas
+      tcOut.textContent = state.t.toFixed(2);
+      xOut.textContent = Math.max(0, showPt.x).toFixed(2);
+      yOut.textContent = Math.max(0, showPt.y).toFixed(2);
+      vxOut.textContent = showPt.vx.toFixed(2);
+      vyOut.textContent = showPt.vy.toFixed(2);
+      vOut.textContent  = vmag.toFixed(2);
+      thOut.textContent = thInst.toFixed(1);
+    }
+
+    // Animaci&oacute;n
+    let lastTS = 0;
+    function loop(ts){
+      if (!state.playing){ draw(); return; }
+      if (!lastTS) lastTS = ts;
+      const dt = (ts - lastTS)/1000; // s
+      lastTS = ts;
+      state.t += dt;
+      if (state.t >= state.tFlight){
+        state.t = state.tFlight;
+        state.playing = false;
+        btnLaunch.textContent = 'Simular';
+      }
+      timeR.value = state.t; timeN.value = state.t.toFixed(2);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    // CSV export
+    btnCSV.addEventListener('click', ()=>{
+      if (!state.path.length) return;
+      const csv = csvFromPath(state.path);
+      const blob = new Blob([csv], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'trayectoria.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    // Controles
+    btnLaunch.addEventListener('click', ()=>{
+      if (!state.playing){
+        state.playing = true; lastTS = 0; requestAnimationFrame(loop);
+        btnLaunch.textContent = 'Reanudar';
+      }
+    });
+    btnPause.addEventListener('click', ()=>{
+      state.playing = false; btnLaunch.textContent = 'Reanudar'; draw();
+    });
+    btnReset.addEventListener('click', ()=>{
+      state.playing = false; state.t = 0; lastTS = 0; btnLaunch.textContent = 'Simular';
+      compute(); draw();
+    });
+
+    // Recalcular al cambiar par&aacute;metros relevantes
+    [velR, velN, angR, angN, y0R, y0N, gR, gN, kR, kN, windR, windN, trailChk].forEach(el=>{
+      el.addEventListener('input', ()=>{state.t=0; state.playing=false; btnLaunch.textContent='Simular'; compute(); draw();});
+    });
+
+    // Inicializar
+    resize();
+  </script>
+
+
+
+<section class="instructions sim-instructions" aria-label="Instrucciones de la pr&aacute;ctica">
+  <h3>Instrucciones</h3>
+  <ul>
+    <li>Ajusta los par&aacute;metros desde el panel de controles.</li>
+    <li>Observa la respuesta del simulador y compara los resultados.</li>
+    <li>Usa las herramientas de exportaci&oacute;n cuando la pr&aacute;ctica las incluya.</li>
+  </ul>
+</section>
+<footer class="sim-footer">
+  &copy; 2026 Simuladores de F&iacute;sica &mdash; Desarrollado por <strong>MSc. Jorge Chimarro Alvear</strong>
+</footer>
+<script src="../../assets/js/simulator-theme.js"></script>
+</body>
+</html>
