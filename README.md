@@ -1,86 +1,126 @@
-# Colección de simuladores de física HTML
+# Simuladores de Física
 
-Repositorio de prácticas interactivas de física desarrolladas con HTML, CSS y JavaScript. Cada simulador vive en su propia carpeta y usa una interfaz visual común basada en la plantilla oficial del proyecto.
+Colección de simuladores interactivos de física desarrollados con HTML, CSS y JavaScript para apoyar prácticas de aula, demostraciones conceptuales y exploración visual de fenómenos físicos.
+
+## Objetivos
+
+- Reunir simuladores de física en una estructura limpia y fácil de mantener.
+- Ofrecer prácticas interactivas ejecutables directamente desde el navegador.
+- Mantener una identidad visual común con modo claro y modo oscuro.
+- Facilitar la observación, medición y exportación de datos cuando el simulador lo permite.
+
+## Características
+
+- Interfaz unificada para todos los simuladores.
+- Panel lateral de controles con sliders, inputs y botones consistentes.
+- Área principal de simulación con canvas, gráficas, tablas o escena 3D.
+- Modo oscuro integrado.
+- Botón `Ajustar vista` en los simuladores con canvas o escena.
+- Exportación CSV en prácticas que generan datos.
+- Exportación PNG cuando la práctica lo incluye.
+- Estructura pensada para GitHub Pages o uso local.
+
+## Simuladores disponibles
+
+- Vectores en el espacio 3D.
+- Máquina de Atwood.
+- Diagrama de cajas y bigotes.
+- Equilibrio en plano inclinado.
+- MRU-MRUV.
+- Conservación de la energía en pista.
+- Movimiento parabólico.
+- Hidrostática y manómetro en U.
+- Lentes ópticas delgadas.
+- Ley de Hooke y movimiento armónico simple.
+- Péndulo simple.
+- Regresión lineal por mínimos cuadrados.
+- Rozamiento en plano horizontal.
+
+## Tecnologías utilizadas
+
+- HTML5.
+- CSS3.
+- JavaScript.
+- Canvas.
+- WebGL / Three.js en el simulador de vectores 3D.
+- Chart.js no es una dependencia global del proyecto; las gráficas actuales se resuelven principalmente con Canvas.
 
 ## Estructura
 
 ```text
-.
-|-- index.html
+Simuladores-de-Fisica/
 |-- README.md
-|-- .gitignore
+|-- LICENSE
+|-- index.html
+|-- plantilla-base.html
 |-- assets/
 |   |-- css/
-|   |   |-- site.css
-|   |   `-- simulator-base.css
-|   `-- js/
-|       `-- simulator-theme.js
+|   |-- js/
+|   `-- img/
 |-- plantilla-base/
 |   |-- index.html
-|   |-- script.js
 |   |-- style.css
-|   `-- plantilla-base.html
+|   `-- script.js
 |-- simuladores/
-|   `-- nombre_del_simulador/
-|       `-- index.html
+|   |-- simulador_3_d_de_vectores_en_el_espacio_arrastre_modulo/
+|   |-- simulador_atwood_consistente/
+|   |-- simulador_cajas_y_bigotes/
+|   |-- simulador_conservacion_de_la_energia_en_pista_sin_cono_rozamiento/
+|   |-- simulador_de_movimiento_parabolico/
+|   |-- simulador_equilibrio_en_plano_inclinado/
+|   |-- simulador_hidrostatica_manometro_u/
+|   |-- simulador_lentes_opticas/
+|   |-- simulador_ley_de_hooke/
+|   |-- simulador_mru_mruv/
+|   |-- simulador_pendulo_simple/
+|   |-- simulador_regresion_lineal_minimos_cuadrados/
+|   `-- simulador_rozamiento/
 `-- tools/
 ```
 
-## Simuladores incluidos
+Cada simulador tiene su propio `index.html` dentro de una carpeta independiente.
 
-- Vectores en el espacio 3D
-- Máquina de Atwood
-- Gráfico de cajas y bigotes
-- Equilibrio en plano inclinado
-- MRU-MRUV
-- Conservación de la energía en pista
-- Movimiento parabólico
-- Hidrostática y manómetro en U
-- Lentes ópticas
-- Ley de Hooke y movimiento armónico simple
-- Péndulo simple
-- Regresión lineal por mínimos cuadrados
-- Rozamiento en plano horizontal
+## Cómo ejecutar localmente
 
-## Convenciones del proyecto
+Opción rápida:
 
-- Un simulador por carpeta dentro de `simuladores/`.
-- Cada simulador debe tener un `index.html`.
-- Los estilos compartidos están en `assets/css/simulator-base.css`.
-- El cambio de tema compartido está en `assets/js/simulator-theme.js`.
-- La plantilla de referencia está en `plantilla-base/`.
-- No usar nombres de archivos nuevos con espacios, tildes o caracteres especiales.
-- Mantener el footer común:
+1. Descarga o clona el repositorio.
+2. Abre `index.html` en un navegador moderno.
+3. Entra al simulador desde la portada.
 
-```text
-© 2026 Simuladores de Física - Desarrollado por MSc. Jorge Chimarro Alvear
+Opción con servidor local:
+
+```powershell
+python -m http.server 8000
 ```
 
-## Identidad visual
+Luego abre:
 
-Los simuladores usan una estructura común:
+```text
+http://localhost:8000
+```
 
-- header con título, subtítulo y switch de modo oscuro;
-- panel lateral de controles;
-- bloque `.buttons` para acciones principales;
-- área principal de canvas, gráfico, tabla o escena;
-- tarjetas de resultados;
-- instrucciones breves;
-- footer común.
+## Compatibilidad
 
-Los checkboxes solo se mantienen para opciones booleanas reales, por ejemplo mostrar vectores, mostrar trayectoria, activar rozamiento o mostrar capas visuales. Las acciones de zoom, centrado o ajuste visual deben usar el botón `Ajustar vista`.
+Recomendado para navegadores modernos:
 
-## Preparación para GitHub
+- Google Chrome.
+- Microsoft Edge.
+- Mozilla Firefox.
+- Safari actualizado.
 
-Antes de publicar:
+Algunos simuladores usan canvas, descarga de archivos o WebGL, por lo que se recomienda permitir JavaScript en el navegador.
 
-1. Verificar que cada carpeta de `simuladores/` tenga `index.html`.
-2. Revisar que no existan archivos temporales, copias o respaldos.
-3. Confirmar que los HTML conserven `<meta charset="UTF-8">`.
-4. Probar modo claro y modo oscuro.
-5. Probar botones, sliders, exportación CSV y exportación PNG cuando existan.
-6. Confirmar que no se hayan alterado fórmulas, cálculos ni comportamiento físico.
+## Modo oscuro
 
-## Herramientas locales
+Todos los simuladores incluyen un switch visible de modo oscuro. El tema cambia fondo, paneles, canvas, textos, bordes y elementos gráficos.
 
-Los scripts de `tools/` ayudan a aplicar formato o revisar estilos comunes. Usarlos solo como apoyo y revisar los cambios antes de publicarlos.
+## Licencia
+
+Este proyecto se distribuye bajo la licencia MIT. Consulta el archivo `LICENSE`.
+
+## Autor
+
+Desarrollado por
+
+MSc. Jorge Chimarro Alvear

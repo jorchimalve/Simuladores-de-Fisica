@@ -1,21 +1,13 @@
 # Simuladores
 
-Guarda aquí cada simulador de física en una carpeta independiente.
+Cada simulador se guarda en una carpeta independiente dentro de `simuladores/`.
 
-Cada carpeta debe tener un `index.html` como archivo de entrada:
-
-```text
-simuladores/
-└── movimiento-parabolico/
-    ├── index.html
-    ├── style.css
-    └── script.js
-```
-
-Si un simulador está completo en un solo archivo HTML, también es válido:
+Convención:
 
 ```text
 simuladores/
-└── pendulo-simple/
-    └── index.html
+|-- nombre_del_simulador/
+|   `-- index.html
 ```
+
+Los nombres de carpetas deben mantenerse en minúsculas, sin espacios, sin tildes y sin caracteres especiales. Si un simulador necesita recursos propios, se pueden agregar dentro de su misma carpeta.
