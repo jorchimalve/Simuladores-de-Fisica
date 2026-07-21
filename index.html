@@ -3,103 +3,199 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Simuladores de Física HTML</title>
-    <link rel="stylesheet" href="assets/css/site.css">
+    <title>Simuladores de Física</title>
+    <meta name="description" content="Portal web de simuladores HTML de física listos para ejecutarse con GitHub Pages.">
+    <link rel="stylesheet" href="./assets/css/site.css">
   </head>
   <body>
     <header class="site-header">
-      <div>
-        <p class="eyebrow">Colección HTML</p>
-        <h1>Simuladores de Física</h1>
-        <p class="intro">Repositorio organizado de prácticas interactivas con formato unificado, navegación directa y simuladores listos para usar en clase.</p>
+      <div class="header-inner">
+        <div>
+          <p class="eyebrow">Colección interactiva HTML</p>
+          <h1>Simuladores de Física</h1>
+          <p class="intro">Prácticas interactivas de física organizadas por tema, con navegación directa, modo oscuro y ejecución en navegador.</p>
+        </div>
+        <label class="theme-toggle">
+          <span>Modo oscuro</span>
+          <input type="checkbox" id="themeSwitch" aria-label="Activar modo oscuro">
+        </label>
       </div>
     </header>
 
     <main class="site-main">
-      <section class="toolbar" aria-label="Resumen de la colección">
-        <span>13 simuladores</span>
-        <a href="plantilla-base/">Ver plantilla base</a>
+      <section class="portal-tools" aria-label="Herramientas del portal">
+        <div class="search-box">
+          <label for="searchInput">Buscar simulador</label>
+          <input id="searchInput" type="search" placeholder="Ej. péndulo, rozamiento, óptica..." autocomplete="off">
+        </div>
+
+        <div class="category-filters" aria-label="Categorías">
+          <button class="filter-button active" type="button" data-filter="Todos">Todos</button>
+          <button class="filter-button" type="button" data-filter="Cinemática">Cinemática</button>
+          <button class="filter-button" type="button" data-filter="Dinámica">Dinámica</button>
+          <button class="filter-button" type="button" data-filter="Energía">Energía</button>
+          <button class="filter-button" type="button" data-filter="Fluidos">Fluidos</button>
+          <button class="filter-button" type="button" data-filter="Óptica">Óptica</button>
+          <button class="filter-button" type="button" data-filter="Estadística">Estadística</button>
+          <button class="filter-button" type="button" data-filter="Vectores">Vectores</button>
+          <button class="filter-button" type="button" data-filter="Otros">Otros</button>
+        </div>
       </section>
 
-      <section class="simulator-grid" aria-label="Lista de simuladores">
-        <a class="simulator-card" href="simuladores/simulador_3_d_de_vectores_en_el_espacio_arrastre_modulo/">
-          <span>Vectores</span>
-          <strong>Vectores en el espacio 3D</strong>
-          <small>Explora módulo, dirección, arrastre y proyecciones de vectores.</small>
-        </a>
-
-        <a class="simulator-card" href="simuladores/simulador_atwood_consistente/">
-          <span>Dinámica</span>
-          <strong>Máquina de Atwood</strong>
-          <small>Analiza aceleración y tensión en un sistema de dos masas.</small>
-        </a>
-
-        <a class="simulator-card" href="simuladores/simulador_cajas_y_bigotes/">
-          <span>Estadística</span>
-          <strong>Gráfico de cajas y bigotes</strong>
-          <small>Visualiza cuartiles, mediana, dispersión y valores atípicos.</small>
-        </a>
-
-        <a class="simulator-card" href="simuladores/simulador_equilibrio_en_plano_inclinado/">
-          <span>Equilibrio</span>
-          <strong>Equilibrio en plano inclinado</strong>
-          <small>Estudia el equilibrio entre un carrito y una masa suspendida.</small>
-        </a>
-
-        <a class="simulator-card" href="simuladores/simulador_mru_mruv/">
-          <span>Cinemática</span>
-          <strong>MRU-MRUV</strong>
-          <small>Compara movimiento uniforme y acelerado con mediciones virtuales.</small>
-        </a>
-
-        <a class="simulator-card" href="simuladores/simulador_conservacion_de_la_energia_en_pista_sin_cono_rozamiento/">
-          <span>Energía</span>
-          <strong>Conservación de la energía</strong>
-          <small>Observa la transformación entre energía potencial y cinética.</small>
-        </a>
-
-        <a class="simulator-card" href="simuladores/simulador_de_movimiento_parabolico/">
-          <span>Cinemática</span>
-          <strong>Movimiento parabólico</strong>
-          <small>Modifica velocidad, ángulo y gravedad para estudiar la trayectoria.</small>
-        </a>
-
-        <a class="simulator-card" href="simuladores/simulador_hidrostatica_manometro_u/">
-          <span>Fluidos</span>
-          <strong>Hidrostática y manómetro en U</strong>
-          <small>Relaciona presión, densidad y diferencia de alturas.</small>
-        </a>
-
-        <a class="simulator-card" href="simuladores/simulador_lentes_opticas/">
-          <span>Óptica</span>
-          <strong>Lentes ópticas</strong>
-          <small>Explora formación de imágenes, foco, objeto e imagen.</small>
-        </a>
-
-        <a class="simulator-card" href="simuladores/simulador_ley_de_hooke/">
-          <span>Oscilaciones</span>
-          <strong>Ley de Hooke y movimiento armónico simple</strong>
-          <small>Investiga fuerza, elongación, masa, energía y oscilación.</small>
-        </a>
-
-        <a class="simulator-card" href="simuladores/simulador_pendulo_simple/">
-          <span>Oscilaciones</span>
-          <strong>Péndulo simple</strong>
-          <small>Analiza período, ángulo, masa y longitud con datos experimentales.</small>
-        </a>
-
-        <a class="simulator-card" href="simuladores/simulador_regresion_lineal_minimos_cuadrados/">
-          <span>Estadística</span>
-          <strong>Regresión lineal por mínimos cuadrados</strong>
-          <small>Carga datos, calcula la recta de ajuste e interpreta R².</small>
-        </a>
-
-        <a class="simulator-card" href="simuladores/simulador_rozamiento/">
-          <span>Dinámica</span>
-          <strong>Rozamiento</strong>
-          <small>Compara rozamiento estático y cinético en plano horizontal.</small>
-        </a>
+      <section class="summary-strip" aria-label="Resumen del proyecto">
+        <span><strong>13</strong> simuladores disponibles</span>
+        <span>Sitio estático compatible con GitHub Pages</span>
+        <a href="./plantilla-base/">Ver plantilla base</a>
       </section>
+
+      <section class="simulator-grid" id="simulatorGrid" aria-label="Lista de simuladores">
+        <article class="simulator-card" data-category="Vectores" data-title="Vectores en el espacio 3D">
+          <span class="tag">Vectores</span>
+          <h2>Vectores en el espacio 3D</h2>
+          <p>Explora módulo, dirección, arrastre y proyecciones de vectores en una escena tridimensional.</p>
+          <a class="open-link" href="./simuladores/simulador_3_d_de_vectores_en_el_espacio_arrastre_modulo/index.html">Abrir simulador</a>
+        </article>
+
+        <article class="simulator-card" data-category="Dinámica" data-title="Máquina de Atwood">
+          <span class="tag">Dinámica</span>
+          <h2>Máquina de Atwood</h2>
+          <p>Analiza aceleración, tensión y relación de masas en un sistema ideal de polea.</p>
+          <a class="open-link" href="./simuladores/simulador_atwood_consistente/index.html">Abrir simulador</a>
+        </article>
+
+        <article class="simulator-card" data-category="Estadística" data-title="Diagrama de cajas y bigotes">
+          <span class="tag">Estadística</span>
+          <h2>Diagrama de cajas y bigotes</h2>
+          <p>Visualiza cuartiles, mediana, dispersión y valores atípicos de un conjunto de datos.</p>
+          <a class="open-link" href="./simuladores/simulador_cajas_y_bigotes/index.html">Abrir simulador</a>
+        </article>
+
+        <article class="simulator-card" data-category="Dinámica" data-title="Equilibrio en plano inclinado">
+          <span class="tag">Dinámica</span>
+          <h2>Equilibrio en plano inclinado</h2>
+          <p>Estudia la condición de equilibrio entre un carrito en rampa y una masa suspendida.</p>
+          <a class="open-link" href="./simuladores/simulador_equilibrio_en_plano_inclinado/index.html">Abrir simulador</a>
+        </article>
+
+        <article class="simulator-card" data-category="Cinemática" data-title="MRU-MRUV">
+          <span class="tag">Cinemática</span>
+          <h2>MRU-MRUV</h2>
+          <p>Compara movimiento rectilíneo uniforme y acelerado con mediciones virtuales.</p>
+          <a class="open-link" href="./simuladores/simulador_mru_mruv/index.html">Abrir simulador</a>
+        </article>
+
+        <article class="simulator-card" data-category="Energía" data-title="Conservación de la energía en pista">
+          <span class="tag">Energía</span>
+          <h2>Conservación de la energía en pista</h2>
+          <p>Observa la transformación entre energía potencial, cinética y mecánica.</p>
+          <a class="open-link" href="./simuladores/simulador_conservacion_de_la_energia_en_pista_sin_cono_rozamiento/index.html">Abrir simulador</a>
+        </article>
+
+        <article class="simulator-card" data-category="Cinemática" data-title="Movimiento parabólico">
+          <span class="tag">Cinemática</span>
+          <h2>Movimiento parabólico</h2>
+          <p>Modifica velocidad, ángulo y gravedad para estudiar trayectorias bidimensionales.</p>
+          <a class="open-link" href="./simuladores/simulador_de_movimiento_parabolico/index.html">Abrir simulador</a>
+        </article>
+
+        <article class="simulator-card" data-category="Fluidos" data-title="Hidrostática y manómetro en U">
+          <span class="tag">Fluidos</span>
+          <h2>Hidrostática y manómetro en U</h2>
+          <p>Relaciona presión, densidad, gravedad y diferencia de alturas en un tubo en U.</p>
+          <a class="open-link" href="./simuladores/simulador_hidrostatica_manometro_u/index.html">Abrir simulador</a>
+        </article>
+
+        <article class="simulator-card" data-category="Óptica" data-title="Lentes ópticas">
+          <span class="tag">Óptica</span>
+          <h2>Lentes ópticas</h2>
+          <p>Explora formación de imágenes, foco, objeto e imagen en lentes delgadas.</p>
+          <a class="open-link" href="./simuladores/simulador_lentes_opticas/index.html">Abrir simulador</a>
+        </article>
+
+        <article class="simulator-card" data-category="Otros" data-title="Ley de Hooke y movimiento armónico simple">
+          <span class="tag">Otros</span>
+          <h2>Ley de Hooke y movimiento armónico simple</h2>
+          <p>Investiga fuerza elástica, elongación, masa, energía y oscilación.</p>
+          <a class="open-link" href="./simuladores/simulador_ley_de_hooke/index.html">Abrir simulador</a>
+        </article>
+
+        <article class="simulator-card" data-category="Otros" data-title="Péndulo simple">
+          <span class="tag">Otros</span>
+          <h2>Péndulo simple</h2>
+          <p>Analiza período, amplitud, longitud y evolución temporal de un péndulo ideal.</p>
+          <a class="open-link" href="./simuladores/simulador_pendulo_simple/index.html">Abrir simulador</a>
+        </article>
+
+        <article class="simulator-card" data-category="Estadística" data-title="Regresión lineal por mínimos cuadrados">
+          <span class="tag">Estadística</span>
+          <h2>Regresión lineal por mínimos cuadrados</h2>
+          <p>Carga datos, calcula la recta de ajuste e interpreta la calidad de la regresión.</p>
+          <a class="open-link" href="./simuladores/simulador_regresion_lineal_minimos_cuadrados/index.html">Abrir simulador</a>
+        </article>
+
+        <article class="simulator-card" data-category="Dinámica" data-title="Rozamiento en plano horizontal">
+          <span class="tag">Dinámica</span>
+          <h2>Rozamiento en plano horizontal</h2>
+          <p>Compara rozamiento estático y cinético sobre un bloque sometido a fuerza aplicada.</p>
+          <a class="open-link" href="./simuladores/simulador_rozamiento/index.html">Abrir simulador</a>
+        </article>
+      </section>
+
+      <p class="empty-state" id="emptyState" hidden>No se encontraron simuladores con ese criterio.</p>
     </main>
+
+    <footer class="site-footer">
+      © 2026 Simuladores de Física — Desarrollado por MSc. Jorge Chimarro Alvear
+    </footer>
+
+    <script>
+      const themeSwitch = document.getElementById("themeSwitch");
+      const searchInput = document.getElementById("searchInput");
+      const filterButtons = Array.from(document.querySelectorAll(".filter-button"));
+      const cards = Array.from(document.querySelectorAll(".simulator-card"));
+      const emptyState = document.getElementById("emptyState");
+
+      const savedTheme = localStorage.getItem("portal-theme");
+      if (savedTheme === "dark") {
+        document.body.classList.add("dark");
+        themeSwitch.checked = true;
+      }
+
+      themeSwitch.addEventListener("change", () => {
+        document.body.classList.toggle("dark", themeSwitch.checked);
+        localStorage.setItem("portal-theme", themeSwitch.checked ? "dark" : "light");
+      });
+
+      function normalize(value) {
+        return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      }
+
+      function applyFilters() {
+        const active = document.querySelector(".filter-button.active").dataset.filter;
+        const query = normalize(searchInput.value.trim());
+        let visibleCount = 0;
+
+        cards.forEach((card) => {
+          const text = normalize(card.textContent);
+          const categoryMatches = active === "Todos" || card.dataset.category === active;
+          const searchMatches = !query || text.includes(query);
+          const visible = categoryMatches && searchMatches;
+          card.hidden = !visible;
+          if (visible) visibleCount += 1;
+        });
+
+        emptyState.hidden = visibleCount > 0;
+      }
+
+      filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          filterButtons.forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+          applyFilters();
+        });
+      });
+
+      searchInput.addEventListener("input", applyFilters);
+    </script>
   </body>
 </html>

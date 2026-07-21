@@ -1,51 +1,64 @@
 # Simuladores de Física
 
-Colección de simuladores interactivos de física desarrollados con HTML, CSS y JavaScript para apoyar prácticas de aula, demostraciones conceptuales y exploración visual de fenómenos físicos.
+Colección de simuladores interactivos de física desarrollados con HTML5, CSS3 y JavaScript. El proyecto está preparado como sitio estático para GitHub Pages, de modo que cada práctica puede abrirse directamente desde el navegador sin instalar dependencias ni descargar archivos adicionales.
+
+## Sitio web
+
+URL esperada de GitHub Pages:
+
+https://jorchimalve.github.io/Simuladores-de-Fisica/
+
+Configurar GitHub Pages con:
+
+- Branch: `main`
+- Folder: `/ (root)`
 
 ## Objetivos
 
 - Reunir simuladores de física en una estructura limpia y fácil de mantener.
 - Ofrecer prácticas interactivas ejecutables directamente desde el navegador.
 - Mantener una identidad visual común con modo claro y modo oscuro.
-- Facilitar la observación, medición y exportación de datos cuando el simulador lo permite.
+- Facilitar observación, medición y exportación de datos cuando el simulador lo permite.
 
 ## Características
 
-- Interfaz unificada para todos los simuladores.
-- Panel lateral de controles con sliders, inputs y botones consistentes.
-- Área principal de simulación con canvas, gráficas, tablas o escena 3D.
-- Modo oscuro integrado.
-- Botón `Ajustar vista` en los simuladores con canvas o escena.
+- Portal principal con buscador, categorías y tarjetas de acceso.
+- Un simulador por carpeta, cada uno con su propio `index.html`.
+- Interfaz consistente basada en `plantilla-base.html`.
+- Modo oscuro en el portal y en los simuladores.
+- Visualización mediante Canvas y WebGL cuando corresponde.
 - Exportación CSV en prácticas que generan datos.
-- Exportación PNG cuando la práctica lo incluye.
-- Estructura pensada para GitHub Pages o uso local.
+- Exportación PNG en simuladores que incluyen captura de gráfica o canvas.
+- Rutas relativas compatibles con GitHub Pages.
 
 ## Simuladores disponibles
 
-- Vectores en el espacio 3D.
-- Máquina de Atwood.
-- Diagrama de cajas y bigotes.
-- Equilibrio en plano inclinado.
-- MRU-MRUV.
-- Conservación de la energía en pista.
-- Movimiento parabólico.
-- Hidrostática y manómetro en U.
-- Lentes ópticas delgadas.
-- Ley de Hooke y movimiento armónico simple.
-- Péndulo simple.
-- Regresión lineal por mínimos cuadrados.
-- Rozamiento en plano horizontal.
+| Categoría | Simulador |
+| --- | --- |
+| Vectores | Vectores en el espacio 3D |
+| Dinámica | Máquina de Atwood |
+| Estadística | Diagrama de cajas y bigotes |
+| Dinámica | Equilibrio en plano inclinado |
+| Cinemática | MRU-MRUV |
+| Energía | Conservación de la energía en pista |
+| Cinemática | Movimiento parabólico |
+| Fluidos | Hidrostática y manómetro en U |
+| Óptica | Lentes ópticas |
+| Otros | Ley de Hooke y movimiento armónico simple |
+| Otros | Péndulo simple |
+| Estadística | Regresión lineal por mínimos cuadrados |
+| Dinámica | Rozamiento en plano horizontal |
 
 ## Tecnologías utilizadas
 
-- HTML5.
-- CSS3.
-- JavaScript.
-- Canvas.
-- WebGL / Three.js en el simulador de vectores 3D.
-- Chart.js no es una dependencia global del proyecto; las gráficas actuales se resuelven principalmente con Canvas.
+- HTML5
+- CSS3
+- JavaScript
+- Canvas
+- WebGL / Three.js en el simulador de vectores 3D
+- Chart.js si se incorpora en futuras prácticas
 
-## Estructura
+## Estructura del repositorio
 
 ```text
 Simuladores-de-Fisica/
@@ -53,6 +66,7 @@ Simuladores-de-Fisica/
 |-- LICENSE
 |-- index.html
 |-- plantilla-base.html
+|-- .nojekyll
 |-- assets/
 |   |-- css/
 |   |-- js/
@@ -78,42 +92,33 @@ Simuladores-de-Fisica/
 `-- tools/
 ```
 
-Cada simulador tiene su propio `index.html` dentro de una carpeta independiente.
-
 ## Cómo ejecutar localmente
 
-Opción rápida:
-
-1. Descarga o clona el repositorio.
-2. Abre `index.html` en un navegador moderno.
-3. Entra al simulador desde la portada.
-
-Opción con servidor local:
+1. Clonar o descargar el repositorio.
+2. Iniciar un servidor HTTP local desde la raíz del proyecto:
 
 ```powershell
 python -m http.server 8000
 ```
 
-Luego abre:
+3. Abrir en el navegador:
 
 ```text
 http://localhost:8000
 ```
 
+No se recomienda abrir los archivos con doble clic local, porque algunas rutas y recursos se validan mejor mediante HTTP.
+
 ## Compatibilidad
 
 Recomendado para navegadores modernos:
 
-- Google Chrome.
-- Microsoft Edge.
-- Mozilla Firefox.
-- Safari actualizado.
+- Google Chrome
+- Microsoft Edge
+- Mozilla Firefox
+- Safari actualizado
 
-Algunos simuladores usan canvas, descarga de archivos o WebGL, por lo que se recomienda permitir JavaScript en el navegador.
-
-## Modo oscuro
-
-Todos los simuladores incluyen un switch visible de modo oscuro. El tema cambia fondo, paneles, canvas, textos, bordes y elementos gráficos.
+Algunos simuladores usan Canvas, descarga de archivos o WebGL, por lo que JavaScript debe estar habilitado.
 
 ## Licencia
 
