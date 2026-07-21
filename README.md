@@ -44,9 +44,6 @@ https://jorchimalve.github.io/Simuladores-de-Fisica/
 | Elasticidad | Ley de Hooke y movimiento armónico simple |
 | Estadística | Regresión lineal por mínimos cuadrados |
 | Dinámica | Rozamiento en plano horizontal |
-| Movimiento Armónico Simple | Ley de Hooke y movimiento armónico simple. |
-| Movimiento Armónico Simple | Péndulo simple |
-| Elasticidad | Ley de Hooke y movimiento armónico simple |
 
 El simulador de Ley de Hooke se incluye en las categorías Elasticidad y Movimiento Armónico Simple porque permite analizar tanto la relación fuerza-deformación como la oscilación de un sistema masa-resorte.
 
