@@ -4,14 +4,9 @@ Colección de simuladores interactivos de física desarrollados con HTML5, CSS3 
 
 ## Sitio web
 
-URL esperada de GitHub Pages:
+URL de GitHub Pages:
 
 https://jorchimalve.github.io/Simuladores-de-Fisica/
-
-Configurar GitHub Pages con:
-
-- Branch: `main`
-- Folder: `/ (root)`
 
 ## Objetivos
 
@@ -49,15 +44,9 @@ Configurar GitHub Pages con:
 | Elasticidad | Ley de Hooke y movimiento armónico simple |
 | Estadística | Regresión lineal por mínimos cuadrados |
 | Dinámica | Rozamiento en plano horizontal |
-
-### Movimiento Armónico Simple
-
-- Ley de Hooke y movimiento armónico simple.
-- Péndulo simple.
-
-### Elasticidad
-
-- Ley de Hooke y movimiento armónico simple.
+| Movimiento Armónico Simple | Ley de Hooke y movimiento armónico simple. |
+| Movimiento Armónico Simple | Péndulo simple |
+| Elasticidad | Ley de Hooke y movimiento armónico simple |
 
 El simulador de Ley de Hooke se incluye en las categorías Elasticidad y Movimiento Armónico Simple porque permite analizar tanto la relación fuerza-deformación como la oscilación de un sistema masa-resorte.
 
