@@ -255,6 +255,12 @@ h1 {
   display: none;
 }
 
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .tag {
   width: fit-content;
   padding: 5px 9px;
@@ -265,9 +271,20 @@ h1 {
   font-weight: 700;
 }
 
+body.dark .tag.secondary,
+.tag.secondary {
+  color: #7c2d12;
+  background: rgba(234, 88, 12, 0.14);
+}
+
 body.dark .tag {
   color: #bfdbfe;
   background: rgba(96, 165, 250, 0.18);
+}
+
+body.dark .tag.secondary {
+  color: #fed7aa;
+  background: rgba(251, 146, 60, 0.18);
 }
 
 .simulator-card h2 {

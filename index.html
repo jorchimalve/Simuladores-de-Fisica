@@ -34,6 +34,8 @@
           <button class="filter-button" type="button" data-filter="Cinemática">Cinemática</button>
           <button class="filter-button" type="button" data-filter="Dinámica">Dinámica</button>
           <button class="filter-button" type="button" data-filter="Energía">Energía</button>
+          <button class="filter-button" type="button" data-filter="Movimiento Armónico Simple (MAS)">Movimiento Armónico Simple (MAS)</button>
+          <button class="filter-button" type="button" data-filter="Elasticidad">Elasticidad</button>
           <button class="filter-button" type="button" data-filter="Fluidos">Fluidos</button>
           <button class="filter-button" type="button" data-filter="Óptica">Óptica</button>
           <button class="filter-button" type="button" data-filter="Estadística">Estadística</button>
@@ -112,17 +114,22 @@
           <a class="open-link" href="./simuladores/simulador_lentes_opticas/index.html">Abrir simulador</a>
         </article>
 
-        <article class="simulator-card" data-category="Otros" data-title="Ley de Hooke y movimiento armónico simple">
-          <span class="tag">Otros</span>
+        <article class="simulator-card" data-category="Movimiento Armónico Simple (MAS)|Elasticidad" data-title="Ley de Hooke y movimiento armónico simple" data-search="MAS movimiento armónico simple oscilaciones elasticidad ley de Hooke resorte fuerza restauradora constante elástica deformación elongación periodo frecuencia masa-resorte">
+          <div class="tag-row">
+            <span class="tag">Movimiento Armónico Simple (MAS)</span>
+            <span class="tag secondary">Elasticidad y MAS</span>
+          </div>
           <h2>Ley de Hooke y movimiento armónico simple</h2>
-          <p>Investiga fuerza elástica, elongación, masa, energía y oscilación.</p>
+          <p>Analiza la elasticidad de un resorte mediante la ley de Hooke y estudia el movimiento armónico simple de un sistema masa-resorte.</p>
           <a class="open-link" href="./simuladores/simulador_ley_de_hooke/index.html">Abrir simulador</a>
         </article>
 
-        <article class="simulator-card" data-category="Otros" data-title="Péndulo simple">
-          <span class="tag">Otros</span>
+        <article class="simulator-card" data-category="Movimiento Armónico Simple (MAS)" data-title="Péndulo simple" data-search="MAS movimiento armónico simple oscilaciones péndulo pendulo periodo frecuencia longitud gravedad pequeñas oscilaciones">
+          <div class="tag-row">
+            <span class="tag">Movimiento Armónico Simple (MAS)</span>
+          </div>
           <h2>Péndulo simple</h2>
-          <p>Analiza período, amplitud, longitud y evolución temporal de un péndulo ideal.</p>
+          <p>Estudia el movimiento oscilatorio de un péndulo simple y la relación de su período con la longitud y la gravedad. Para oscilaciones pequeñas, se aproxima como MAS.</p>
           <a class="open-link" href="./simuladores/simulador_pendulo_simple/index.html">Abrir simulador</a>
         </article>
 
@@ -176,8 +183,9 @@
         let visibleCount = 0;
 
         cards.forEach((card) => {
-          const text = normalize(card.textContent);
-          const categoryMatches = active === "Todos" || card.dataset.category === active;
+          const text = normalize(`${card.textContent} ${card.dataset.search || ""} ${card.dataset.title || ""}`);
+          const categories = (card.dataset.category || "").split("|");
+          const categoryMatches = active === "Todos" || categories.includes(active);
           const searchMatches = !query || text.includes(query);
           const visible = categoryMatches && searchMatches;
           card.hidden = !visible;
