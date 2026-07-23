@@ -133,7 +133,7 @@ button{appearance:none;-webkit-appearance:none}
 <div class="modal" id="msgModal"><div class="dialog"><div class="speech"><img class="pixel" id="facPortrait2"><div><b style="color:#66cfff">FACILITADOR</b><h2 id="msgTitle"></h2><p id="msgText"></p></div></div>
 <button id="msgClose" class="arcade-btn">Continuar</button></div></div>
 
-<div class="modal" id="pauseModal"><div class="dialog"><div class="pause-title">JUEGO EN PAUSA</div><p style="text-align:center">Presiona ESC para continuar.</p></div></div>
+<div class="modal" id="pauseModal"><div class="dialog"><div class="pause-title">JUEGO EN PAUSA</div><p style="text-align:center">Presiona ESC o toca Continuar para reanudar.</p><button type="button" id="pauseResume" class="arcade-btn" style="width:100%;margin-top:14px">Continuar</button></div></div>
 <div class="level-transition" id="levelTransition"><div class="level-transition-card"><strong id="transitionTitle">NIVEL COMPLETADO</strong><span id="transitionText"></span></div></div>
 <div class="modal" id="endModal"><div class="dialog" style="text-align:center"><div style="font-size:5rem">🏅</div><h2>LABORATORISTA AUTORIZADO</h2><p id="endText"></p>
 <button id="again" class="arcade-btn">Jugar nuevamente</button></div></div>
@@ -420,6 +420,7 @@ $("quizSubmit").onclick=()=>{
 function message(t,m){st.paused=true;$("msgTitle").textContent=t;$("msgText").textContent=m;$("msgModal").classList.add("show")}
 $("foodEatBtn").onclick=()=>{ensureAudio();eatFood()};$("foodStoreBtn").onclick=()=>{ensureAudio();storeFood()};$("msgClose").onclick=()=>{SFX.ui();$("msgModal").classList.remove("show");st.paused=false}
 function togglePause(){if(!gameStarted||st.foodMode||$("quizModal").classList.contains("show")||$("msgModal").classList.contains("show"))return;st.paused=!st.paused;$("pauseModal").classList.toggle("show",st.paused)}
+$("pauseResume").onclick=()=>{ensureAudio();if(st.paused)togglePause()};
 function check(){
   const l=levels[st.level];
   if(!l.required.every(x=>st.done.has(x)))return;
