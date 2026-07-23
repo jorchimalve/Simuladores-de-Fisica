@@ -469,17 +469,25 @@ function check(){
 function updateHUD(){$("hudLevel").textContent=st.level+1;$("hudTotal").textContent=levels.length;$("hudXP").textContent=String(st.xp).padStart(4,"0");$("hudLives").textContent="❤".repeat(st.lives)+"♡".repeat(st.maxLives-st.lives);$("extraLives").textContent="+"+st.extraLives+" vidas almacenadas";$("missionTitle").textContent="Nivel "+(st.level+1)+" — "+levels[st.level].title;$("missionText").textContent=levels[st.level].text;const l=levels[st.level],d=l.required.filter(x=>st.done.has(x)).length;$("bar").style.width=(d/l.required.length*100)+"%";$("hudTimer").textContent=l.timeLimit?Math.max(0,Math.ceil(l.timeLimit-st.levelElapsed/1000))+"s":"--";$("inventory").innerHTML=st.inventory.size?[...st.inventory].map(x=>"<span>"+x+"</span>").join(""):"<span style='color:#aec4d6'>Vacío</span>"}
 function updateTimer(dt){const l=levels[st.level];if(st.paused||st.timeExpired||st.levelCompleting)return;st.levelElapsed+=dt;if(!l.timeLimit)return;$("hudTimer").textContent=Math.max(0,Math.ceil(l.timeLimit-st.levelElapsed/1000))+"s";if(st.levelElapsed>=l.timeLimit*1000&&!l.required.every(x=>st.done.has(x))){st.timeExpired=true;const ended=loseLife();if(!ended)message("Tiempo agotado","La puntualidad es parte de la normativa. Intenta el ingreso nuevamente en menos de "+l.timeLimit+" segundos.",()=>resetLevel())}}
 function loop(now){const dt=Math.min(32,now-st.last);st.last=now;st.frame++;st.anim+=dt/16.67;updateTimer(dt);move(dt);floor();drawLevelZone();drawWalls();drawItems();drawPlayer();hint();requestAnimationFrame(loop)}
+function handleEnterAction(){
+ if($("quizModal").classList.contains("show")){$("quizSubmit").click();return true}
+ if($("msgModal").classList.contains("show")){$("msgClose").click();return true}
+ if($("pauseModal").classList.contains("show")){$("pauseResume").click();return true}
+ if($("endModal").classList.contains("show")){$("again").click();return true}
+ if($("foodModal").classList.contains("show")){$("foodStoreBtn").click();return true}
+ return false;
+}
 
 window.addEventListener("keydown",e=>{
  const typing=inputMode||e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement;
  if(typing)return;
+ if(e.code==="Enter"&&handleEnterAction()){e.preventDefault();return}
  if(e.code==="Escape"){e.preventDefault();togglePause();return}
  if(!gameStarted)return;
  if(st.foodMode){if(e.code==="KeyE"){e.preventDefault();eatFood()}else if(e.code==="KeyG"){e.preventDefault();storeFood()}return}
  if($("quizModal").classList.contains("show")){
   const letter={KeyA:0,KeyB:1,KeyC:2,KeyD:3}[e.code];
   if(letter!==undefined){e.preventDefault();selectQuizOption(letter);return}
-  if(e.code==="Enter"){e.preventDefault();$("quizSubmit").click();return}
   return;
  }
  st.keys[e.code]=true;
