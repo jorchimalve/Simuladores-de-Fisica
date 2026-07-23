@@ -270,7 +270,7 @@ quiz:{q:"¿Qué resume la conducta esperada?",options:["Puntualidad, preparació
 
 const baseWalls=[{x:0,y:0,w:1000,h:38},{x:0,y:572,w:1000,h:38},{x:0,y:0,w:38,h:610},{x:962,y:0,w:38,h:610},{x:318,y:100,w:28,h:150},{x:318,y:355,w:28,h:145},{x:640,y:100,w:28,h:150},{x:640,y:355,w:28,h:145}];
 function currentWalls(){const l=levels[st.level];if(l&&l.walls)return l.useBaseWalls===false?l.walls:baseWalls.concat(l.walls);return baseWalls}
-let st={name:"",level:0,xp:0,lives:3,maxLives:3,extraLives:0,hasCoat:false,keys:{},joy:{x:0,y:0},done:new Set(),inventory:new Set(),player:{x:90,y:305,r:19,speed:3.5,coat:false,dir:"down",moving:false,action:"idle",actionTimer:0},frame:0,last:performance.now(),paused:false,selected:null,active:null,anim:0,foodMode:false,currentQuiz:null,quizLocked:false,levelCompleting:false,lastCorrectSlot:-1,levelElapsed:0,timeExpired:false,afterMessage:null};
+let st={name:"",level:0,xp:0,lives:3,maxLives:3,extraLives:0,hasCoat:false,keys:{},joy:{x:0,y:0},done:new Set(),inventory:new Set(),player:{x:90,y:305,r:19,speed:3.5,coat:false,dir:"down",moving:false,action:"idle",actionTimer:0},frame:0,last:performance.now(),paused:false,selected:null,active:null,anim:0,foodMode:false,currentQuiz:null,quizLocked:false,levelCompleting:false,levelAdvanceToken:0,lastCorrectSlot:-1,levelElapsed:0,timeExpired:false,afterMessage:null};
 
 $("acceptName").onclick=()=>{ensureAudio();SFX.ui();const n=$("playerName").value.trim();if(!n){alert("Escribe tu nombre.");return}st.name=n;$("hudName").textContent=n;show("game");gameStarted=true;resetLevel();if(!loopStarted){loopStarted=true;st.last=performance.now();requestAnimationFrame(loop)}};
 
@@ -285,6 +285,7 @@ function closeAllOverlays(){
   st.currentQuiz=null;
   st.quizLocked=false;
   st.levelCompleting=false;
+  st.levelAdvanceToken++;
   st.foodMode=false;
   st.paused=false;
   st.keys={};
@@ -324,7 +325,7 @@ $("audioToggle").onclick=()=>{
 };
 
 function log(t,c="info"){const p=document.createElement("p");p.className=c;p.textContent="• "+t;$("log").prepend(p)}
-function resetLevel(){const l=levels[st.level],start=l.start||{x:90,y:305};st.player.x=start.x;st.player.y=start.y;st.player.coat=st.hasCoat;st.player.action="idle";st.done=new Set();st.inventory=new Set();st.paused=false;st.foodMode=false;st.levelCompleting=false;st.quizLocked=false;st.levelElapsed=0;st.timeExpired=false;st.afterMessage=null;st.active=null;st.selected=null;st.currentQuiz=null;updateHUD();log("Nivel iniciado: "+levels[st.level].title)}
+function resetLevel(){const l=levels[st.level],start=l.start||{x:90,y:305};st.player.x=start.x;st.player.y=start.y;st.player.coat=st.hasCoat;st.player.action="idle";st.done=new Set();st.inventory=new Set();st.paused=false;st.foodMode=false;st.levelCompleting=false;st.quizLocked=false;st.levelAdvanceToken++;st.levelElapsed=0;st.timeExpired=false;st.afterMessage=null;st.active=null;st.selected=null;st.currentQuiz=null;updateHUD();log("Nivel iniciado: "+levels[st.level].title)}
 function collide(r,x,y,rad){const nx=Math.max(r.x,Math.min(x,r.x+r.w)),ny=Math.max(r.y,Math.min(y,r.y+r.h));return (x-nx)**2+(y-ny)**2<rad**2}
 function move(dt){if(st.paused)return;let dx=0,dy=0;if(st.keys.KeyW||st.keys.ArrowUp)dy--;if(st.keys.KeyS||st.keys.ArrowDown)dy++;if(st.keys.KeyA||st.keys.ArrowLeft)dx--;if(st.keys.KeyD||st.keys.ArrowRight)dx++;if(st.joy){dx+=st.joy.x;dy+=st.joy.y}const mag=Math.hypot(dx,dy);if(mag>1){dx/=mag;dy/=mag}st.player.moving=!!(dx||dy);if(st.player.moving&&performance.now()-lastStepSound>285){lastStepSound=performance.now();SFX.step()}if(st.player.actionTimer>0){st.player.actionTimer-=dt;st.player.moving=false;return}if(Math.abs(dx)>Math.abs(dy))st.player.dir=dx>0?"right":"left";else if(dy)st.player.dir=dy>0?"down":"up";const nx=st.player.x+dx*st.player.speed*dt/16.67,ny=st.player.y+dy*st.player.speed*dt/16.67;if(!currentWalls().some(w=>collide(w,nx,ny,st.player.r))){st.player.x=nx;st.player.y=ny}}
 function floor(){const grad=ctx.createLinearGradient(0,0,0,610);grad.addColorStop(0,"#324c5b");grad.addColorStop(1,"#1b303e");ctx.fillStyle=grad;ctx.fillRect(0,0,1000,610);ctx.strokeStyle="#ffffff12";for(let x=38;x<1000;x+=40){ctx.beginPath();ctx.moveTo(x,38);ctx.lineTo(x,572);ctx.stroke()}for(let y=38;y<610;y+=40){ctx.beginPath();ctx.moveTo(38,y);ctx.lineTo(962,y);ctx.stroke()}ctx.fillStyle="#102536";ctx.fillRect(38,38,924,92);ctx.fillStyle="#081a29";ctx.fillRect(70,62,230,48);ctx.fillRect(380,62,230,48);ctx.fillRect(690,62,230,48);for(let x of [90,120,150,420,450,480,730,760,790]){ctx.fillStyle=["#35b9e8","#ef4f5a","#e5c94a"][x%3];ctx.fillRect(x,76,13,28);ctx.fillStyle="#d8f5ff";ctx.fillRect(x+3,68,7,9)}[[95,165,210],[395,165,205],[700,165,205]].forEach(a=>{ctx.fillStyle="#3a2a24";ctx.fillRect(a[0],a[1],a[2],58);ctx.fillStyle="#73533d";ctx.fillRect(a[0]-5,a[1]-8,a[2]+10,14)})}
@@ -406,11 +407,13 @@ $("quizSubmit").onclick=()=>{
   if(st.selected===q.correct){
     st.quizLocked=true;
     $("quizSubmit").disabled=true;
+    const answered=st.active;
+    st.currentQuiz=null;
     SFX.correct();
     arcadePulse($("quizFeedback"));
     $("quizFeedback").textContent="Respuesta correcta. +100 XP";
     $("quizFeedback").className="ok";
-    if(st.active){st.done.add(st.active.id);st.inventory.add(st.active.label)}
+    if(answered){st.done.add(answered.id);st.inventory.add(answered.label)}
     st.xp+=100;
     setTimeout(()=>{
       $("quizModal").classList.remove("show");
@@ -437,6 +440,8 @@ function check(){
   const l=levels[st.level];
   if(!l.required.every(x=>st.done.has(x)))return;
   st.levelCompleting=true;
+  const completedLevel=st.level;
+  const token=++st.levelAdvanceToken;
   st.xp+=150;
   st.paused=true;
   arcadePulse($("bar"));
@@ -448,11 +453,12 @@ function check(){
     showLevelTransition("NIVEL COMPLETADO","Preparando el siguiente desafío");
   }
   setTimeout(()=>{
+    if(token!==st.levelAdvanceToken||st.level!==completedLevel)return;
     if(st.level===levels.length-1){
       $("endText").textContent=st.name+", completaste todas las normas con "+st.xp+" XP.";
       $("endModal").classList.add("show");
     }else{
-      st.level++;
+      st.level=completedLevel+1;
       resetLevel();
     }
   },760);
