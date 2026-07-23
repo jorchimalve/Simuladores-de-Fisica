@@ -392,7 +392,7 @@ function storeFood(){
   check();
 }
 function interact(it=nearby()){if(!it||st.paused)return;ensureAudio();SFX.interact();st.player.dir=it.x>st.player.x?"right":"left";if(it.type==="collect"||it.type==="locked"){st.player.action="pickup";st.player.actionTimer=700;st.done.add(it.id);st.inventory.add(it.label);st.xp+=50;SFX.pickup();arcadePulse($("inventory"));log("Objeto obtenido: "+it.label,"ok");check()}else if(it.type==="coat"){st.player.action="pickup";st.player.actionTimer=700;st.done.add(it.id);st.inventory.add(it.label);st.player.coat=true;st.hasCoat=true;st.xp+=75;SFX.pickup();arcadePulse($("inventory"));message("Mandil colocado",st.name+", ahora llevas puesto el mandil blanco obligatorio.");check()}else if(it.type==="food"){st.active=it;st.foodMode=true;st.paused=true;$("foodModal").classList.add("show")}else if(it.type==="safetyQuiz"){st.active=it;quiz(safetyQuestions[Math.floor(Math.random()*safetyQuestions.length)])}else{st.player.action="interact";st.player.actionTimer=700;st.active=it;quiz(levels[st.level].quiz)}updateHUD()}
-function shuffledOptions(q){let arr=q.options.map((text,i)=>({text,correct:i===q.correct}));for(let attempt=0;attempt<8;attempt++){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}if(arr.length<2||arr.findIndex(o=>o.correct)!==st.lastCorrectSlot)break}return arr}function quiz(q){st.paused=true;st.selected=null;st.quizLocked=false;$("quizSubmit").disabled=false;const mixed=shuffledOptions(q);st.currentQuiz={q:q.q,options:mixed.map(o=>o.text),correct:mixed.findIndex(o=>o.correct)};st.lastCorrectSlot=st.currentQuiz.correct;$("quizQ").textContent=q.q;$("quizFeedback").textContent="";$("quizOpts").innerHTML="";st.currentQuiz.options.forEach((o,i)=>{const b=document.createElement("button");b.textContent=String.fromCharCode(65+i)+") "+o;b.onclick=()=>{if(st.quizLocked)return;SFX.ui();st.selected=i;[...$("quizOpts").children].forEach((x,j)=>x.classList.toggle("selected",j===i))};$("quizOpts").appendChild(b)});$("quizModal").classList.add("show")}
+function shuffledOptions(q){let arr=q.options.map((text,i)=>({text,correct:i===q.correct}));for(let attempt=0;attempt<8;attempt++){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}if(arr.length<2||arr.findIndex(o=>o.correct)!==st.lastCorrectSlot)break}return arr}function selectQuizOption(i){if(st.quizLocked)return;const opts=[...$("quizOpts").children];if(!opts[i])return;SFX.ui();st.selected=i;opts.forEach((x,j)=>x.classList.toggle("selected",j===i))}function quiz(q){st.paused=true;st.selected=null;st.quizLocked=false;$("quizSubmit").disabled=false;const mixed=shuffledOptions(q);st.currentQuiz={q:q.q,options:mixed.map(o=>o.text),correct:mixed.findIndex(o=>o.correct)};st.lastCorrectSlot=st.currentQuiz.correct;$("quizQ").textContent=q.q;$("quizFeedback").textContent="";$("quizOpts").innerHTML="";st.currentQuiz.options.forEach((o,i)=>{const b=document.createElement("button");b.textContent=String.fromCharCode(65+i)+") "+o;b.onclick=()=>selectQuizOption(i);$("quizOpts").appendChild(b)});$("quizModal").classList.add("show")}
 $("quizSubmit").onclick=()=>{
   ensureAudio();
   if(st.quizLocked)return;
@@ -442,7 +442,10 @@ function check(){
   st.levelCompleting=true;
   const completedLevel=st.level;
   const token=++st.levelAdvanceToken;
-  st.xp+=150;
+  const speedTarget=l.timeLimit||40;
+  const speedBonus=Math.max(0,Math.round((1-Math.min(st.levelElapsed/1000/speedTarget,1))*120));
+  st.xp+=150+speedBonus;
+  if(speedBonus)log("Bonificación por rapidez: +"+speedBonus+" XP","ok");
   st.paused=true;
   arcadePulse($("bar"));
   if(st.level===levels.length-1){
@@ -464,7 +467,7 @@ function check(){
   },760);
 }
 function updateHUD(){$("hudLevel").textContent=st.level+1;$("hudTotal").textContent=levels.length;$("hudXP").textContent=String(st.xp).padStart(4,"0");$("hudLives").textContent="❤".repeat(st.lives)+"♡".repeat(st.maxLives-st.lives);$("extraLives").textContent="+"+st.extraLives+" vidas almacenadas";$("missionTitle").textContent="Nivel "+(st.level+1)+" — "+levels[st.level].title;$("missionText").textContent=levels[st.level].text;const l=levels[st.level],d=l.required.filter(x=>st.done.has(x)).length;$("bar").style.width=(d/l.required.length*100)+"%";$("hudTimer").textContent=l.timeLimit?Math.max(0,Math.ceil(l.timeLimit-st.levelElapsed/1000))+"s":"--";$("inventory").innerHTML=st.inventory.size?[...st.inventory].map(x=>"<span>"+x+"</span>").join(""):"<span style='color:#aec4d6'>Vacío</span>"}
-function updateTimer(dt){const l=levels[st.level];if(!l.timeLimit||st.paused||st.timeExpired)return;st.levelElapsed+=dt;$("hudTimer").textContent=Math.max(0,Math.ceil(l.timeLimit-st.levelElapsed/1000))+"s";if(st.levelElapsed>=l.timeLimit*1000&&!l.required.every(x=>st.done.has(x))){st.timeExpired=true;const ended=loseLife();if(!ended)message("Tiempo agotado","La puntualidad es parte de la normativa. Intenta el ingreso nuevamente en menos de "+l.timeLimit+" segundos.",()=>resetLevel())}}
+function updateTimer(dt){const l=levels[st.level];if(st.paused||st.timeExpired||st.levelCompleting)return;st.levelElapsed+=dt;if(!l.timeLimit)return;$("hudTimer").textContent=Math.max(0,Math.ceil(l.timeLimit-st.levelElapsed/1000))+"s";if(st.levelElapsed>=l.timeLimit*1000&&!l.required.every(x=>st.done.has(x))){st.timeExpired=true;const ended=loseLife();if(!ended)message("Tiempo agotado","La puntualidad es parte de la normativa. Intenta el ingreso nuevamente en menos de "+l.timeLimit+" segundos.",()=>resetLevel())}}
 function loop(now){const dt=Math.min(32,now-st.last);st.last=now;st.frame++;st.anim+=dt/16.67;updateTimer(dt);move(dt);floor();drawLevelZone();drawWalls();drawItems();drawPlayer();hint();requestAnimationFrame(loop)}
 
 window.addEventListener("keydown",e=>{
@@ -473,7 +476,12 @@ window.addEventListener("keydown",e=>{
  if(e.code==="Escape"){e.preventDefault();togglePause();return}
  if(!gameStarted)return;
  if(st.foodMode){if(e.code==="KeyE"){e.preventDefault();eatFood()}else if(e.code==="KeyG"){e.preventDefault();storeFood()}return}
- if(e.code==="Enter"&&$("quizModal").classList.contains("show")){$("quizSubmit").click();return}
+ if($("quizModal").classList.contains("show")){
+  const letter={KeyA:0,KeyB:1,KeyC:2,KeyD:3}[e.code];
+  if(letter!==undefined){e.preventDefault();selectQuizOption(letter);return}
+  if(e.code==="Enter"){e.preventDefault();$("quizSubmit").click();return}
+  return;
+ }
  st.keys[e.code]=true;
  if(e.code==="KeyE"){e.preventDefault();interact()}
  if(e.code==="KeyG"){const it=nearby();if(it&&it.type==="food"){e.preventDefault();st.active=it;st.foodMode=true;st.paused=true;$("foodModal").classList.add("show");storeFood()}}
