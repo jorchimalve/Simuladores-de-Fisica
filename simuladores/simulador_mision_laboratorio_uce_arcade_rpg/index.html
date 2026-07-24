@@ -124,7 +124,7 @@ button{appearance:none;-webkit-appearance:none}
 
 <div class="modal" id="foodModal"><div class="dialog"><h2>🍔 Alimentos encontrados</h2>
 <p>Consumir alimentos dentro del laboratorio infringe las normas.</p>
-<div class="food-help"><b>E = Comer</b> y perder una vida<br><b>G = Guardar</b> y obtener una vida extra</div>
+<div class="food-help"><b>E = Comer ahora</b><br><b>G = Guardar y retirar del área</b></div>
 <div class="food-actions">
 <button type="button" id="foodEatBtn" class="arcade-btn eat">E — Comer</button>
 <button type="button" id="foodStoreBtn" class="arcade-btn store">G — Guardar</button>
@@ -251,14 +251,14 @@ quiz:{q:"¿Qué documento debe prepararse previamente?",options:["Fundamentació
 {title:"Mesa de equipos",text:"Entrega tu carné o cédula como garantía y retira el material.",required:["id","table","material"],items:[
 {id:"id",x:190,y:245,w:62,h:45,label:"Cédula",icon:"▤",type:"collect"},{id:"table",x:650,y:180,w:185,h:105,label:"Mesa de equipos",icon:"🧪",type:"quiz"},{id:"material",x:720,y:395,w:82,h:70,label:"Material de laboratorio",icon:"⚗",type:"locked"}],
 quiz:{q:"¿Qué debes entregar para retirar el material?",options:["Carné o cédula","Dinero","Fotografía","Informe final"],correct:0}},
-{title:"Trabajo experimental",text:"Completa las acciones de observar, medir y calcular.",required:["observe","measure","calculate"],items:[
-{id:"observe",x:180,y:185,w:88,h:72,label:"Observar",icon:"👁",type:"collect"},{id:"measure",x:445,y:365,w:88,h:72,label:"Medir",icon:"📏",type:"collect"},{id:"calculate",x:720,y:185,w:88,h:72,label:"Calcular",icon:"∑",type:"quiz"}],
-quiz:{q:"¿Quién es responsable de los resultados?",options:["El grupo de trabajo","Solo el docente","Secretaría","Otro grupo"],correct:0}},
+{title:"Trabajo experimental",text:"Aplica el método científico: observa el fenómeno, plantea una hipótesis, mide variables, analiza datos y formula una conclusión.",required:["observe","hypothesis","measure","analyze","calculate"],items:[
+{id:"observe",x:135,y:185,w:88,h:72,label:"Observación",icon:"👁",type:"collect"},{id:"hypothesis",x:340,y:330,w:92,h:72,label:"Hipótesis",icon:"💡",type:"collect"},{id:"measure",x:535,y:185,w:88,h:72,label:"Medición",icon:"📏",type:"collect"},{id:"analyze",x:650,y:365,w:88,h:72,label:"Análisis",icon:"📊",type:"collect"},{id:"calculate",x:805,y:185,w:88,h:72,label:"Conclusión",icon:"∑",type:"quiz"}],
+quiz:{q:"¿Qué secuencia representa mejor el método científico en la práctica?",options:["Observar, formular hipótesis, medir, analizar y concluir","Calcular antes de observar","Copiar resultados sin medir","Entregar sin contrastar datos"],correct:0}},
 {title:"Seguridad",text:"Decide correctamente qué hacer con los alimentos.",required:["food","fac"],items:[
 {id:"food",x:405,y:300,w:92,h:70,label:"Alimentos",icon:"🍔",type:"food"},{id:"fac",x:745,y:320,w:75,h:95,label:"Facilitador",icon:"👨‍🔬",type:"safetyQuiz"}]},
-{title:"Cuidado del material",text:"Reporta el daño y solicita la revisión correspondiente antes de entregar los equipos.",required:["broken","protocol"],items:[
-{id:"broken",x:290,y:225,w:80,h:65,label:"Equipo dañado",icon:"💥",type:"collect"},{id:"protocol",x:715,y:335,w:100,h:82,label:"Revisión de equipos",icon:"⏱",type:"quiz"}],
-quiz:{q:"¿En qué plazo debe reponerse el material?",options:["48 horas","24 horas","Una semana","Fin de semestre"],correct:0}},
+{title:"Cuidado del material",text:"Si encuentras un equipo dañado, decide cómo reportarlo antes de continuar con la entrega de equipos.",required:["broken","protocol"],items:[
+{id:"broken",x:290,y:225,w:80,h:65,label:"Equipo dañado",icon:"💥",type:"quiz"},{id:"protocol",x:715,y:335,w:100,h:82,label:"Entrega de equipos",icon:"✅",type:"collect"}],
+quiz:{q:"Si encuentras un equipo dañado, ¿qué deberías hacer?",options:["Avisar al técnico o auxiliar de laboratorio inmediatamente","No decir nada","Seguir usando el equipo","Guardarlo para evitar problemas"],correct:0}},
 {title:"Informe",text:"Recoge la hoja de datos y entrega el informe a tiempo.",required:["data","report","submit"],items:[
 {id:"data",x:185,y:350,w:68,h:62,label:"Hoja de datos",icon:"📄",type:"collect"},{id:"report",x:455,y:190,w:68,h:68,label:"Informe",icon:"📝",type:"collect"},{id:"submit",x:750,y:335,w:92,h:82,label:"Entrega",icon:"📥",type:"quiz"}],
 quiz:{q:"¿Qué ocurre con un informe tardío no justificado?",options:["Se computa con cero","Se recibe sin penalización","Se califica sobre diez","Se reemplaza por asistencia"],correct:0}},
@@ -270,7 +270,20 @@ quiz:{q:"¿Qué resume la conducta esperada?",options:["Puntualidad, preparació
 
 const baseWalls=[{x:0,y:0,w:1000,h:38},{x:0,y:572,w:1000,h:38},{x:0,y:0,w:38,h:610},{x:962,y:0,w:38,h:610},{x:318,y:100,w:28,h:150},{x:318,y:355,w:28,h:145},{x:640,y:100,w:28,h:150},{x:640,y:355,w:28,h:145}];
 function currentWalls(){const l=levels[st.level];if(l&&l.walls)return l.useBaseWalls===false?l.walls:baseWalls.concat(l.walls);return baseWalls}
-let st={name:"",level:0,xp:0,lives:3,maxLives:3,extraLives:0,hasCoat:false,keys:{},joy:{x:0,y:0},done:new Set(),inventory:new Set(),player:{x:90,y:305,r:19,speed:3.5,coat:false,dir:"down",moving:false,action:"idle",actionTimer:0},frame:0,last:performance.now(),paused:false,selected:null,active:null,anim:0,foodMode:false,currentQuiz:null,quizLocked:false,levelCompleting:false,levelAdvanceToken:0,lastCorrectSlot:-1,levelElapsed:0,timeExpired:false,afterMessage:null};
+function currentItems(){return levels[st.level].items.concat(st.extras||[])}
+function shuffleList(list){const arr=list.slice();for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+function makeLevelExtras(){
+  if(st.level<=4||levels[st.level].timeLimit)return [];
+  const spots=[{x:130,y:455},{x:840,y:430},{x:475,y:260},{x:165,y:155},{x:805,y:155},{x:505,y:455}];
+  const count=Math.random()<.55?1:(Math.random()<.28?2:0);
+  return shuffleList(spots).slice(0,count).map((p,i)=>{
+    const food=Math.random()<.5;
+    return food
+      ? {id:"extra_food_"+st.level+"_"+i,x:p.x,y:p.y,w:74,h:62,label:"Alimento fuera de lugar",icon:"🍎",type:"food",bonus:true,inv:"alimento retirado"}
+      : {id:"extra_trash_"+st.level+"_"+i,x:p.x,y:p.y,w:72,h:62,label:"Basura",icon:"🗑️",type:"trash",bonus:true,inv:"basura retirada"};
+  });
+}
+let st={name:"",level:0,xp:0,lives:3,maxLives:3,extraLives:0,hasCoat:false,keys:{},joy:{x:0,y:0},done:new Set(),inventory:new Set(),extras:[],player:{x:90,y:305,r:19,speed:3.5,coat:false,dir:"down",moving:false,action:"idle",actionTimer:0},frame:0,last:performance.now(),paused:false,selected:null,active:null,anim:0,foodMode:false,currentQuiz:null,quizLocked:false,levelCompleting:false,levelAdvanceToken:0,lastCorrectSlot:-1,levelElapsed:0,timeExpired:false,afterMessage:null};
 
 $("acceptName").onclick=()=>{ensureAudio();SFX.ui();const n=$("playerName").value.trim();if(!n){alert("Escribe tu nombre.");return}st.name=n;$("hudName").textContent=n;show("game");gameStarted=true;resetLevel();if(!loopStarted){loopStarted=true;st.last=performance.now();requestAnimationFrame(loop)}};
 
@@ -325,14 +338,14 @@ $("audioToggle").onclick=()=>{
 };
 
 function log(t,c="info"){const p=document.createElement("p");p.className=c;p.textContent="• "+t;$("log").prepend(p)}
-function resetLevel(){const l=levels[st.level],start=l.start||{x:90,y:305};st.player.x=start.x;st.player.y=start.y;st.player.coat=st.hasCoat;st.player.action="idle";st.done=new Set();st.inventory=new Set();st.paused=false;st.foodMode=false;st.levelCompleting=false;st.quizLocked=false;st.levelAdvanceToken++;st.levelElapsed=0;st.timeExpired=false;st.afterMessage=null;st.active=null;st.selected=null;st.currentQuiz=null;updateHUD();log("Nivel iniciado: "+l.title);message("Nivel "+(st.level+1)+" — "+l.title,l.text)}
+function resetLevel(){const l=levels[st.level],start=l.start||{x:90,y:305};st.player.x=start.x;st.player.y=start.y;st.player.coat=st.hasCoat;st.player.action="idle";st.done=new Set();st.inventory=new Set();st.extras=makeLevelExtras();st.paused=false;st.foodMode=false;st.levelCompleting=false;st.quizLocked=false;st.levelAdvanceToken++;st.levelElapsed=0;st.timeExpired=false;st.afterMessage=null;st.active=null;st.selected=null;st.currentQuiz=null;updateHUD();log("Nivel iniciado: "+l.title);message("Nivel "+(st.level+1)+" — "+l.title,l.text)}
 function collide(r,x,y,rad){const nx=Math.max(r.x,Math.min(x,r.x+r.w)),ny=Math.max(r.y,Math.min(y,r.y+r.h));return (x-nx)**2+(y-ny)**2<rad**2}
 function move(dt){if(st.paused)return;let dx=0,dy=0;if(st.keys.KeyW||st.keys.ArrowUp)dy--;if(st.keys.KeyS||st.keys.ArrowDown)dy++;if(st.keys.KeyA||st.keys.ArrowLeft)dx--;if(st.keys.KeyD||st.keys.ArrowRight)dx++;if(st.joy){dx+=st.joy.x;dy+=st.joy.y}const mag=Math.hypot(dx,dy);if(mag>1){dx/=mag;dy/=mag}st.player.moving=!!(dx||dy);if(st.player.moving&&performance.now()-lastStepSound>285){lastStepSound=performance.now();SFX.step()}if(st.player.actionTimer>0){st.player.actionTimer-=dt;st.player.moving=false;return}if(Math.abs(dx)>Math.abs(dy))st.player.dir=dx>0?"right":"left";else if(dy)st.player.dir=dy>0?"down":"up";const nx=st.player.x+dx*st.player.speed*dt/16.67,ny=st.player.y+dy*st.player.speed*dt/16.67;if(!currentWalls().some(w=>collide(w,nx,ny,st.player.r))){st.player.x=nx;st.player.y=ny}}
 function floor(){const grad=ctx.createLinearGradient(0,0,0,610);grad.addColorStop(0,"#324c5b");grad.addColorStop(1,"#1b303e");ctx.fillStyle=grad;ctx.fillRect(0,0,1000,610);ctx.strokeStyle="#ffffff12";for(let x=38;x<1000;x+=40){ctx.beginPath();ctx.moveTo(x,38);ctx.lineTo(x,572);ctx.stroke()}for(let y=38;y<610;y+=40){ctx.beginPath();ctx.moveTo(38,y);ctx.lineTo(962,y);ctx.stroke()}ctx.fillStyle="#102536";ctx.fillRect(38,38,924,92);ctx.fillStyle="#081a29";ctx.fillRect(70,62,230,48);ctx.fillRect(380,62,230,48);ctx.fillRect(690,62,230,48);for(let x of [90,120,150,420,450,480,730,760,790]){ctx.fillStyle=["#35b9e8","#ef4f5a","#e5c94a"][x%3];ctx.fillRect(x,76,13,28);ctx.fillStyle="#d8f5ff";ctx.fillRect(x+3,68,7,9)}[[95,165,210],[395,165,205],[700,165,205]].forEach(a=>{ctx.fillStyle="#3a2a24";ctx.fillRect(a[0],a[1],a[2],58);ctx.fillStyle="#73533d";ctx.fillRect(a[0]-5,a[1]-8,a[2]+10,14)})}
 function wallShape(w,r=7){ctx.beginPath();ctx.moveTo(w.x+r,w.y);ctx.lineTo(w.x+w.w-r,w.y);ctx.quadraticCurveTo(w.x+w.w,w.y,w.x+w.w,w.y+r);ctx.lineTo(w.x+w.w,w.y+w.h-r);ctx.quadraticCurveTo(w.x+w.w,w.y+w.h,w.x+w.w-r,w.y+w.h);ctx.lineTo(w.x+r,w.y+w.h);ctx.quadraticCurveTo(w.x,w.y+w.h,w.x,w.y+w.h-r);ctx.lineTo(w.x,w.y+r);ctx.quadraticCurveTo(w.x,w.y,w.x+r,w.y)}function drawLevelZone(){}function drawWalls(){currentWalls().forEach(w=>{ctx.fillStyle="#061521";wallShape(w,7);ctx.fill()})}
-function drawItems(){levels[st.level].items.forEach(it=>{if(st.done.has(it.id))return;const unlocked=it.type!=="locked"||st.done.has("table");const p=1+Math.sin(st.frame*.09)*.045;ctx.save();ctx.translate(it.x+it.w/2,it.y+it.h/2);ctx.scale(p,p);ctx.fillStyle=unlocked?"#061a2ccc":"#000b";ctx.strokeStyle=unlocked?"#ffd34d":"#666";ctx.lineWidth=2;ctx.fillRect(-it.w/2,-it.h/2,it.w,it.h);ctx.strokeRect(-it.w/2,-it.h/2,it.w,it.h);ctx.font=`${Math.min(it.w,it.h)*.52}px Segoe UI Emoji`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=unlocked?"white":"#777";ctx.fillText(it.icon,0,0);ctx.restore();ctx.font="bold 13px Consolas";ctx.textAlign="center";ctx.fillStyle="#fff";ctx.fillText(it.label,it.x+it.w/2,it.y+it.h+18)})}
+function drawItems(){currentItems().forEach(it=>{if(st.done.has(it.id))return;const unlocked=it.type!=="locked"||st.done.has("table");const p=1+Math.sin(st.frame*.09)*.045;ctx.save();ctx.translate(it.x+it.w/2,it.y+it.h/2);ctx.scale(p,p);ctx.fillStyle=unlocked?"#061a2ccc":"#000b";ctx.strokeStyle=unlocked?"#ffd34d":"#666";ctx.lineWidth=2;ctx.fillRect(-it.w/2,-it.h/2,it.w,it.h);ctx.strokeRect(-it.w/2,-it.h/2,it.w,it.h);ctx.font=`${Math.min(it.w,it.h)*.52}px Segoe UI Emoji`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=unlocked?"white":"#777";ctx.fillText(it.icon,0,0);ctx.restore();ctx.font="bold 13px Consolas";ctx.textAlign="center";ctx.fillStyle="#fff";ctx.fillText(it.label,it.x+it.w/2,it.y+it.h+18)})}
 function drawPlayer(){let frame=0;if(st.player.action==="interact"&&st.player.actionTimer>0)frame=10+Math.floor((700-st.player.actionTimer)/120)%4;else if(st.player.action==="pickup"&&st.player.actionTimer>0)frame=14+Math.floor((700-st.player.actionTimer)/120)%4;else if(st.player.moving)frame=2+Math.floor(st.anim/5)%8;else frame=Math.floor(st.anim/24)%2;const set=st.player.coat?COATS[chosen]:SPRITES[chosen];const im=img(set[frame]);let bob=st.player.moving?Math.sin(st.anim*.5)*1.5:Math.sin(st.anim*.08)*.8;let flip=st.player.dir==="left";ctx.save();ctx.translate(st.player.x,st.player.y+bob);if(flip)ctx.scale(-1,1);ctx.shadowColor="#0008";ctx.shadowBlur=7;ctx.shadowOffsetY=7;if(im.complete)ctx.drawImage(im,-50,-70,100,100);ctx.restore();ctx.font="bold 13px Consolas";ctx.textAlign="center";ctx.fillStyle="#fff";ctx.fillText(st.name,st.player.x,st.player.y+55)}
-function itemAvailable(it){return !st.done.has(it.id)&&(it.type!=="locked"||st.done.has("table"))}function itemDistance(it){return Math.hypot(st.player.x-it.x-it.w/2,st.player.y-it.y-it.h/2)}function nearby(range=140){let best=null,d0=range;for(const it of levels[st.level].items){if(!itemAvailable(it))continue;const d=itemDistance(it);if(d<d0){best=it;d0=d}}return best}
+function itemAvailable(it){return !st.done.has(it.id)&&(it.type!=="locked"||st.done.has("table"))}function itemDistance(it){return Math.hypot(st.player.x-it.x-it.w/2,st.player.y-it.y-it.h/2)}function nearby(range=140){let best=null,d0=range;for(const it of currentItems()){if(!itemAvailable(it))continue;const d=itemDistance(it);if(d<d0){best=it;d0=d}}return best}
 function hint(){const it=nearby();if(!it)return;ctx.fillStyle="#000d";ctx.fillRect(250,535,500,31);ctx.strokeStyle="#49bffc";ctx.strokeRect(250,535,500,31);ctx.fillStyle="#fff";ctx.textAlign="center";ctx.font="14px Consolas";ctx.fillText(it.type==="food"?"E = COMER   |   G = GUARDAR":"E / CLICK — INTERACTUAR CON "+it.label.toUpperCase(),500,556)}
 function flashRed(){$("redFlash").classList.add("show");setTimeout(()=>$("redFlash").classList.remove("show"),220)}
 function loseLife(){
@@ -368,13 +381,14 @@ function eatFood(){
   $("foodModal").classList.remove("show");
   st.foodMode=false;
   const active=st.active;
+  const isBonus=!!(active&&active.bonus);
   if(active)st.done.add(active.id);
-  st.xp=Math.max(0,st.xp-30);
+  st.xp=Math.max(0,st.xp-(isBonus?20:30));
   const ended=loseLife();
   if(ended)return;
   log("Consumir alimentos dentro del laboratorio infringe las normas. -1 vida","bad");
   message("Norma incumplida","Consumir alimentos dentro del laboratorio infringe las normas.");
-  check();
+  if(!isBonus)check();
 }
 function storeFood(){
   if(!st.foodMode)return;
@@ -382,7 +396,18 @@ function storeFood(){
   $("foodModal").classList.remove("show");
   st.foodMode=false;
   const active=st.active;
+  const isBonus=!!(active&&active.bonus);
   if(active)st.done.add(active.id);
+  if(isBonus){
+    st.xp+=70;
+    st.inventory.add(active.inv||active.label);
+    SFX.pickup();
+    arcadePulse($("inventory"));
+    log("Alimento retirado del área de trabajo. +70 XP","ok");
+    message("Decisión correcta","Retiraste el alimento del área de trabajo y mantuviste la práctica segura.");
+    updateHUD();
+    return;
+  }
   st.extraLives++;
   st.xp+=60;
   arcadePulse($("extraLives"));
@@ -391,7 +416,7 @@ function storeFood(){
   updateHUD();
   check();
 }
-function interact(it=nearby()){if(!it||st.paused)return;ensureAudio();SFX.interact();st.player.dir=it.x>st.player.x?"right":"left";if(it.type==="collect"||it.type==="locked"){st.player.action="pickup";st.player.actionTimer=700;st.done.add(it.id);st.inventory.add(it.label);st.xp+=50;SFX.pickup();arcadePulse($("inventory"));log("Objeto obtenido: "+it.label,"ok");check()}else if(it.type==="coat"){st.player.action="pickup";st.player.actionTimer=700;st.done.add(it.id);st.inventory.add(it.label);st.player.coat=true;st.hasCoat=true;st.xp+=75;SFX.pickup();arcadePulse($("inventory"));message("Mandil colocado",st.name+", ahora llevas puesto el mandil blanco obligatorio.");check()}else if(it.type==="food"){st.active=it;st.foodMode=true;st.paused=true;$("foodModal").classList.add("show")}else if(it.type==="safetyQuiz"){st.active=it;quiz(safetyQuestions[Math.floor(Math.random()*safetyQuestions.length)])}else{st.player.action="interact";st.player.actionTimer=700;st.active=it;quiz(levels[st.level].quiz)}updateHUD()}
+function interact(it=nearby()){if(!it||st.paused)return;ensureAudio();SFX.interact();st.player.dir=it.x>st.player.x?"right":"left";if(it.type==="collect"||it.type==="locked"){st.player.action="pickup";st.player.actionTimer=700;st.done.add(it.id);st.inventory.add(it.inv||it.label);st.xp+=50;SFX.pickup();arcadePulse($("inventory"));log("Objeto obtenido: "+it.label,"ok");check()}else if(it.type==="trash"){st.player.action="pickup";st.player.actionTimer=700;st.done.add(it.id);st.inventory.add(it.inv||it.label);st.xp+=45;SFX.pickup();arcadePulse($("inventory"));log("Residuo retirado del área de trabajo. +45 XP","ok")}else if(it.type==="coat"){st.player.action="pickup";st.player.actionTimer=700;st.done.add(it.id);st.inventory.add(it.label);st.player.coat=true;st.hasCoat=true;st.xp+=75;SFX.pickup();arcadePulse($("inventory"));message("Mandil colocado",st.name+", ahora llevas puesto el mandil blanco obligatorio.");check()}else if(it.type==="food"){st.active=it;st.foodMode=true;st.paused=true;$("foodModal").classList.add("show")}else if(it.type==="safetyQuiz"){st.active=it;quiz(safetyQuestions[Math.floor(Math.random()*safetyQuestions.length)])}else{st.player.action="interact";st.player.actionTimer=700;st.active=it;quiz(levels[st.level].quiz)}updateHUD()}
 function shuffledOptions(q){let arr=q.options.map((text,i)=>({text,correct:i===q.correct}));for(let attempt=0;attempt<8;attempt++){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}if(arr.length<2||arr.findIndex(o=>o.correct)!==st.lastCorrectSlot)break}return arr}function selectQuizOption(i){if(st.quizLocked)return;const opts=[...$("quizOpts").children];if(!opts[i])return;SFX.ui();st.selected=i;opts.forEach((x,j)=>x.classList.toggle("selected",j===i))}function quiz(q){st.paused=true;st.selected=null;st.quizLocked=false;$("quizSubmit").disabled=false;const mixed=shuffledOptions(q);st.currentQuiz={q:q.q,options:mixed.map(o=>o.text),correct:mixed.findIndex(o=>o.correct)};st.lastCorrectSlot=st.currentQuiz.correct;$("quizQ").textContent=q.q;$("quizFeedback").textContent="";$("quizOpts").innerHTML="";st.currentQuiz.options.forEach((o,i)=>{const b=document.createElement("button");b.textContent=String.fromCharCode(65+i)+") "+o;b.onclick=()=>selectQuizOption(i);$("quizOpts").appendChild(b)});$("quizModal").classList.add("show")}
 $("quizSubmit").onclick=()=>{
   ensureAudio();
@@ -505,7 +530,7 @@ function canvasInteractAt(clientX,clientY){
   const r=canvas.getBoundingClientRect();
   const mx=(clientX-r.left)*canvas.width/r.width,my=(clientY-r.top)*canvas.height/r.height;
   const margin=34;
-  let it=levels[st.level].items.find(i=>itemAvailable(i)&&mx>=i.x-margin&&mx<=i.x+i.w+margin&&my>=i.y-margin&&my<=i.y+i.h+margin);
+  let it=currentItems().find(i=>itemAvailable(i)&&mx>=i.x-margin&&mx<=i.x+i.w+margin&&my>=i.y-margin&&my<=i.y+i.h+margin);
   if(!it)it=nearby(150);
   if(!it)return;
   const d=itemDistance(it);
