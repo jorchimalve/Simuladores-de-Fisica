@@ -274,10 +274,10 @@ function currentItems(){return levels[st.level].items.concat(st.extras||[])}
 function shuffleList(list){const arr=list.slice();for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
 function makeLevelExtras(){
   if(st.level<=4||st.level===levels.length-1||levels[st.level].timeLimit)return [];
-  const spots=[{x:130,y:455},{x:840,y:430},{x:475,y:260},{x:165,y:155},{x:805,y:155},{x:505,y:455}];
-  const count=Math.random()<.55?1:(Math.random()<.28?2:0);
+  const spots=[{x:130,y:455},{x:840,y:430},{x:475,y:260},{x:165,y:155},{x:805,y:155},{x:505,y:455},{x:245,y:150},{x:610,y:145},{x:250,y:425},{x:675,y:420}];
+  const count=Math.random()<.2?1:(Math.random()<.65?2:3);
   return shuffleList(spots).slice(0,count).map((p,i)=>{
-    const food=Math.random()<.5;
+    const food=Math.random()<.28;
     return food
       ? {id:"extra_food_"+st.level+"_"+i,x:p.x,y:p.y,w:74,h:62,label:"Alimento fuera de lugar",icon:"🍎",type:"food",bonus:true,inv:"alimento retirado"}
       : {id:"extra_trash_"+st.level+"_"+i,x:p.x,y:p.y,w:72,h:62,label:"Basura",icon:"🗑️",type:"trash",bonus:true,inv:"basura retirada"};
