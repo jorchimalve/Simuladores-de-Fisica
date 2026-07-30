@@ -139,6 +139,13 @@
 
     // Animaci&oacute;n simple para ilustrar direcci&oacute;n
     let lastTS=0;
+    function stopSimulation(){
+      state.playing = false;
+      state.vel = 0;
+      lastTS = 0;
+      btnPlay.textContent = 'Simular';
+    }
+
     function loop(ts){
       if(!state.playing){ draw(); return; }
       if(!lastTS) lastTS=ts; const dt=Math.min((ts-lastTS)/1000, 0.033); lastTS=ts;
@@ -147,15 +154,21 @@
       const visualVel = Math.abs(state.a) < 1e-6
         ? 0
         : Math.sign(state.a) * Math.max(Math.abs(state.vel), startVisualSpeed);
-      state.x += visualVel*dt*motionScale;
-      state.yHang += visualVel*dt*motionScale; // coherente con direcci&oacute;n
 
       const {minX, maxX} = limits();
-      if(state.x > maxX){ state.x = maxX; state.vel = 0; }
-      if(state.x < minX){ state.x = minX; state.vel = 0; }
+      const step = visualVel*dt*motionScale;
+      const nextX = state.x + step;
+      const clampedX = Math.max(minX, Math.min(maxX, nextX));
+      const appliedStep = clampedX - state.x;
+      state.x = clampedX;
+      state.yHang += appliedStep; // mantiene acoplados carrito y masa colgante
+
+      if(nextX !== clampedX){
+        stopSimulation();
+      }
 
       draw();
-      requestAnimationFrame(loop);
+      if(state.playing) requestAnimationFrame(loop);
     }
 
     btnEval.addEventListener('click', ()=>{ compute(); draw(); });
