@@ -61,9 +61,8 @@
   <button data-fit-view>Ajustar vista</button>
 </div>
 
-      <div class="stats grid-3">
+      <div class="stats grid-2">
         <div class="card"><span>Condici&oacute;n de equilibrio</span><strong id="eqCond">m&middot;g &asymp; M&middot;g&middot;sin&theta;</strong></div>
-        <div class="card"><span>Resultado num&eacute;rico</span><strong id="eqNums">-</strong></div>
         <div class="card"><span>Aceleraci&oacute;n (m/s&sup2;)</span><strong id="aOut">0.00</strong></div>
       </div>
     </section>
@@ -88,7 +87,6 @@
     const btnEval=$('#btnEval'), btnPlay=$('#btnPlay'), btnReset=$('#btnReset');
 
     const eqCond=$('#eqCond');
-    const eqNums=$('#eqNums');
     const aOut=$('#aOut');
 
     const cv=document.getElementById('cv');
@@ -97,6 +95,8 @@
     let w=0,h=0; const dpr=window.devicePixelRatio||1;
 
     const state={theta:30*M_PI_180(), M:10, m:5, g:9.8, playing:false, x:0, yHang:0, vel:0};
+    const motionScale = 2.6;
+    const startVisualSpeed = 0.55;
 
     function limits(){
       const margin=40;
@@ -135,18 +135,20 @@
       const a = g*(m - Msintheta)/(M + m); // + => derecha (carro sube)
       state.a=a;
       aOut.textContent = a.toFixed(3);
-      eqNums.textContent = `${(m*g).toFixed(2)} vs ${(M*g*Math.sin(th)).toFixed(2)}`;
     }
 
     // Animaci&oacute;n simple para ilustrar direcci&oacute;n
     let lastTS=0;
     function loop(ts){
       if(!state.playing){ draw(); return; }
-      if(!lastTS) lastTS=ts; const dt=(ts-lastTS)/1000; lastTS=ts;
-      // movimiento limitado: avanza continuamente hasta tocar l-mites (pie o polea)
-      state.vel += state.a*dt;
-      state.x += state.vel*dt;
-      state.yHang += state.vel*dt; // coherente con direcci&oacute;n
+      if(!lastTS) lastTS=ts; const dt=Math.min((ts-lastTS)/1000, 0.033); lastTS=ts;
+      // movimiento visual suavizado: responde de inmediato y mantiene la direcci&oacute;n f&iacute;sica calculada
+      state.vel += state.a*dt*motionScale;
+      const visualVel = Math.abs(state.a) < 1e-6
+        ? 0
+        : Math.sign(state.a) * Math.max(Math.abs(state.vel), startVisualSpeed);
+      state.x += visualVel*dt*motionScale;
+      state.yHang += visualVel*dt*motionScale; // coherente con direcci&oacute;n
 
       const {minX, maxX} = limits();
       if(state.x > maxX){ state.x = maxX; state.vel = 0; }
@@ -157,7 +159,15 @@
     }
 
     btnEval.addEventListener('click', ()=>{ compute(); draw(); });
-    btnPlay.addEventListener('click', ()=>{ state.playing=!state.playing; lastTS=0; btnPlay.textContent= state.playing? 'Pausar' : 'Simular'; if(state.playing) requestAnimationFrame(loop); });
+    btnPlay.addEventListener('click', ()=>{
+      state.playing=!state.playing;
+      lastTS=0;
+      if(state.playing && Math.abs(state.a) > 1e-6 && Math.abs(state.vel) < startVisualSpeed){
+        state.vel = Math.sign(state.a) * startVisualSpeed;
+      }
+      btnPlay.textContent= state.playing? 'Pausar' : 'Simular';
+      if(state.playing) requestAnimationFrame(loop);
+    });
     btnReset.addEventListener('click', ()=>{ state.playing=false; btnPlay.textContent='Simular'; state.x=0; state.yHang=0; state.vel=0; compute(); draw(); });
 
     function drawSetup(){
@@ -254,8 +264,6 @@
       ctx.restore();
 
       // &Aacute;ngulo
-      ctx.strokeStyle='#7ea2d6'; ctx.lineWidth=2; ctx.beginPath();
-      ctx.arc(x0,y0,40, -Math.PI/2, -Math.PI/2+th, false); ctx.stroke();
       ctx.fillStyle=document.body.classList.contains('dark') ? '#cbd5e1' : '#475569'; ctx.font='12px Arial'; ctx.fillText(`\u03b8 = ${(th*180/Math.PI).toFixed(1)}\u00b0`, x0+46*Math.cos(th/2), y0-46*Math.sin(th/2));
     }
 
