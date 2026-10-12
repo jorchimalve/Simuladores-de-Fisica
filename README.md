@@ -107,7 +107,11 @@ http://localhost:8000
 
 No se recomienda abrir los archivos con doble clic local, porque algunas rutas y recursos se validan mejor mediante HTTP.
 
-## Compatibilidad
+## Contador de visitas
+
+El portal y los 14 simuladores incluyen medición por página y total del sitio, pendiente de activar un sitio GoatCounter. No se requieren claves API en el código. Consulta [configuración, significado de las métricas y pruebas](docs/visitas.md). Las cifras son visitas registradas, no personas únicas ni datos históricos recuperados.
+
+## Compatibilidad de navegadores
 
 Recomendado para navegadores modernos:
 

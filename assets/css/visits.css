@@ -1,0 +1,16 @@
+.visits-panel {
+  box-sizing: border-box;
+  width: min(1240px, calc(100% - 32px));
+  margin: 24px auto;
+  padding: 16px 20px;
+  border: 1px solid var(--border, #94a3b8);
+  border-radius: 12px;
+  background: var(--panel, #fff);
+  color: var(--text, #111827);
+  font: 14px/1.5 Arial, Helvetica, sans-serif;
+}
+.visits-panel h2 { margin: 0 0 8px; font-size: 17px; }
+.visits-panel p { margin: 6px 0; }
+.visits-panel a { color: inherit; text-decoration: underline; }
+.visits-panel .visits-note { color: var(--text-soft, #475569); }
+.visits-card { font-size: 13px; color: var(--text-soft, #475569); }
