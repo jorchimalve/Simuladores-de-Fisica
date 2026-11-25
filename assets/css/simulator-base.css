@@ -68,6 +68,10 @@ body {
   transition: background 0.25s ease, color 0.25s ease;
 }
 
+.home-link{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-height:40px;padding:8px 13px;border:1px solid rgba(255,255,255,.55);border-radius:8px;background:rgba(255,255,255,.10);color:#fff;text-decoration:none;font-size:14px;font-weight:700;white-space:nowrap;transition:background .2s ease,border-color .2s ease}
+.home-link:hover{background:rgba(255,255,255,.22);border-color:#fff}
+.home-link:focus-visible{outline:3px solid #7dd3fc;outline-offset:3px}
+
 .sim-header,
 header {
   display: flex;
