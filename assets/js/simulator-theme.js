@@ -13,13 +13,19 @@
       titleGroup.prepend(eyebrow);
     }
 
-    if (!header.querySelector(".sim-home-link, .home-link, [data-sim-home]")) {
-      const homeLink = document.createElement("a");
+    const homeSelector = "a.sim-home-link, a.home-link, a.portal-home, a.collection-home-button, a[data-sim-home]";
+    const homeLinks = Array.from(document.querySelectorAll(homeSelector));
+    let homeLink = homeLinks.find((link) => link.closest("header")) || homeLinks[0] || null;
+    homeLinks.filter((link) => link !== homeLink).forEach((link) => link.remove());
+
+    if (!homeLink) {
+      homeLink = document.createElement("a");
       homeLink.className = "sim-home-link";
       homeLink.href = window.location.pathname.includes("/simuladores/") ? "../../index.html" : "../index.html";
       homeLink.setAttribute("aria-label", "Volver al inicio de Simuladores de Física");
-      homeLink.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3.5 10.8 8.5-7 8.5 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.7 9.5v10.1h12.6V9.5M9.3 19.6v-6.2h5.4v6.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Inicio</span>';
-
+      homeLink.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3.5 10.8 8.5 7 8.5 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.7 9.5v10.1h12.6V9.5M9.3 19.6v-6.2h5.4v6.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Inicio</span>';
+    }
+    if (homeLink.parentElement !== header) {
       if (themeToggle) header.insertBefore(homeLink, themeToggle);
       else header.append(homeLink);
     }
