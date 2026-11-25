@@ -39,6 +39,7 @@ https://jorchimalve.github.io/Simuladores-de-Fisica/
 | Cinemática | Movimiento parabólico |
 | Fluidos | Hidrostática y manómetro en U |
 | Óptica | Lentes ópticas |
+| Electromagnetismo | Ley de Biot–Savart |
 | Movimiento Armónico Simple | Ley de Hooke y movimiento armónico simple |
 | Movimiento Armónico Simple | Péndulo simple |
 | Elasticidad | Ley de Hooke y movimiento armónico simple |
@@ -82,6 +83,7 @@ Simuladores-de-Fisica/
 |   |-- simulador_equilibrio_en_plano_inclinado/
 |   |-- simulador_hidrostatica_manometro_u/
 |   |-- simulador_lentes_opticas/
+|   |-- simulador_ley_de_biot_savart/
 |   |-- simulador_ley_de_hooke/
 |   |-- simulador_mru_mruv/
 |   |-- simulador_pendulo_simple/
