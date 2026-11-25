@@ -13,7 +13,7 @@
       titleGroup.prepend(eyebrow);
     }
 
-    if (!header.querySelector(".sim-home-link, [data-sim-home]")) {
+    if (!header.querySelector(".sim-home-link, .home-link, [data-sim-home]")) {
       const homeLink = document.createElement("a");
       homeLink.className = "sim-home-link";
       homeLink.href = window.location.pathname.includes("/simuladores/") ? "../../index.html" : "../index.html";
