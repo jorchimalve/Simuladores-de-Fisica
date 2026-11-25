@@ -1,0 +1,6 @@
+{
+  "name": "simuladores-de-fisica",
+  "private": true,
+  "scripts": { "test": "node --test tests/visits.test.cjs" },
+  "devDependencies": { "playwright": "1.62.1" }
+}
