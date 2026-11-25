@@ -3,33 +3,32 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Plantilla base - Simulador de física</title>
+    <meta name="description" content="Plantilla compartida para los simuladores de física.">
+    <title>Plantilla base - Simuladores de Física</title>
+    <link rel="stylesheet" href="../assets/css/simulator-base.css">
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
-    <header class="app-header">
-      <div>
-        <p class="eyebrow">Plantilla base</p>
+    <header class="sim-header">
+      <div class="sim-title-group">
         <h1>Nombre del simulador</h1>
-        <p>Descripción breve del fenómeno físico.</p>
+        <p class="sim-subtitle">Descripción breve del fenómeno físico.</p>
       </div>
-      <button type="button" id="themeButton" aria-pressed="false">Modo oscuro</button>
+      <label class="theme-toggle">
+        <span>Modo oscuro</span>
+        <input type="checkbox" id="themeSwitch" aria-label="Activar modo oscuro">
+      </label>
     </header>
 
-    <main class="layout">
+    <main class="container template-layout">
       <section class="panel controls" aria-labelledby="controlsTitle">
         <h2 id="controlsTitle">Controles</h2>
-
-        <label>
-          Parámetro
-          <input id="parameterInput" type="range" min="0" max="100" value="50">
-        </label>
-
+        <label for="parameterInput">Parámetro</label>
+        <input id="parameterInput" type="range" min="0" max="100" value="50">
         <output id="parameterValue" for="parameterInput">50</output>
-
-        <div class="button-row">
+        <div class="buttons">
           <button type="button" id="startButton">Iniciar</button>
-          <button type="button" id="resetButton">Reiniciar</button>
+          <button type="button" id="resetButton" class="secondary">Reiniciar</button>
         </div>
       </section>
 
@@ -37,16 +36,18 @@
         <canvas id="simulationCanvas" width="1000" height="560"></canvas>
       </section>
 
-      <section class="panel notes" aria-labelledby="notesTitle">
+      <section class="panel template-notes" aria-labelledby="notesTitle">
         <h2 id="notesTitle">Instrucciones</h2>
         <ul>
-          <li>Ajusta los parámetros.</li>
-          <li>Ejecuta la simulación.</li>
-          <li>Observa los resultados y registra los datos importantes.</li>
+          <li>Ajusta los parámetros del experimento.</li>
+          <li>Ejecuta la simulación y observa la respuesta.</li>
+          <li>Registra los datos relevantes para el análisis.</li>
         </ul>
       </section>
     </main>
 
+    <footer class="sim-footer">© 2026 Simuladores de Física — Desarrollado por <strong>MSc. Jorge Chimarro Alvear</strong></footer>
+    <script src="../assets/js/simulator-theme.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

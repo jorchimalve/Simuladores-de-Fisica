@@ -692,3 +692,280 @@ body.dark .badge {
     min-height: 420px;
   }
 }
+
+
+/* Identidad visual común inspirada en el simulador de Biot–Savart. */
+:root {
+  --bg: #f1f5f9;
+  --header: #0d2d46;
+  --primary: #147f91;
+  --primary-hover: #0d6879;
+  --border: #d7e3ed;
+  --shadow: 0 12px 34px rgba(20, 45, 68, 0.08);
+}
+
+body.dark {
+  --bg: #0d1724;
+  --header: #081a2b;
+  --panel: #142538;
+  --text: #edf5fb;
+  --text-soft: #b7c8d8;
+  --primary: #29a6b4;
+  --primary-hover: #38bbc7;
+  --border: #2b4156;
+  --canvas: #102033;
+  --shadow: 0 14px 36px rgba(0, 0, 0, 0.24);
+}
+
+.sim-header {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: clamp(18px, 3vw, 52px);
+  min-height: 184px;
+  padding: 28px clamp(22px, 8.8vw, 180px);
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: linear-gradient(112deg, #102d49 0%, #124e6b 62%, #137087 100%);
+  box-shadow: 0 10px 28px rgba(8, 33, 53, 0.14);
+}
+
+.sim-header::after {
+  position: absolute;
+  z-index: -1;
+  top: -250px;
+  right: 6%;
+  width: 520px;
+  height: 520px;
+  border: 1px solid rgba(162, 225, 230, 0.12);
+  border-radius: 50%;
+  box-shadow: 0 0 0 34px rgba(162, 225, 230, 0.045), 0 0 0 74px rgba(162, 225, 230, 0.035);
+  content: "";
+  pointer-events: none;
+}
+
+.sim-title-group {
+  position: relative;
+  z-index: 1;
+  max-width: 980px;
+}
+
+.sim-eyebrow {
+  margin: 0 0 5px;
+  color: #8ee2dc;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.19em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.sim-title-group h1 {
+  font-size: clamp(27px, 3vw, 39px);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+}
+
+.sim-subtitle {
+  max-width: 900px;
+  margin-top: 5px;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.sim-home-link {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 17px;
+  border: 1px solid rgba(218, 239, 247, 0.58);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.07));
+  color: #ffffff;
+  box-shadow: 0 5px 16px rgba(2, 17, 30, 0.14), inset 0 1px rgba(255, 255, 255, 0.18);
+  font-size: 15px;
+  font-weight: 750;
+  text-decoration: none;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.sim-home-link:hover,
+.sim-home-link:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 9px 22px rgba(2, 17, 30, 0.24), inset 0 1px rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.sim-home-link:focus-visible {
+  outline: 3px solid #8ee2dc;
+  outline-offset: 3px;
+}
+
+/* Conserva compatibilidad con el botón Inicio de Biot–Savart. */
+header .home-link {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 1px solid rgba(218, 239, 247, 0.65);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.07));
+  color: #ffffff;
+  box-shadow: 0 5px 16px rgba(2, 17, 30, 0.16), inset 0 1px rgba(255, 255, 255, 0.18);
+  font-size: 14px;
+  font-weight: 750;
+  text-decoration: none;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  backdrop-filter: blur(10px);
+}
+
+header .home-link::before {
+  content: "⌂";
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 22px;
+  line-height: 1;
+}
+
+header .home-link:hover,
+header .home-link:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  box-shadow: 0 9px 22px rgba(2, 17, 30, 0.24), inset 0 1px rgba(255, 255, 255, 0.22);
+}
+
+.sim-home-link svg {
+  width: 19px;
+  height: 19px;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+}
+
+.sim-header .theme-toggle {
+  position: relative;
+  z-index: 1;
+  gap: 11px;
+  white-space: nowrap;
+}
+
+.sim-header .theme-toggle input {
+  width: 54px;
+  height: 30px;
+  background: #7890a6;
+}
+
+.sim-header .theme-toggle input::before {
+  width: 24px;
+  height: 24px;
+}
+
+.sim-header .theme-toggle input:checked::before {
+  transform: translateX(24px);
+}
+
+body {
+  background: var(--bg);
+}
+
+.panel,
+.controls,
+.instructions,
+.info,
+.canvas-wrap,
+.canvas-container,
+section:has(> canvas) {
+  border-color: var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+
+@media (max-width: 1000px) {
+  main,
+  .container,
+  .layout,
+  main.container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .sim-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px 14px;
+    min-height: 0;
+    padding: 24px 20px;
+  }
+
+  .sim-title-group {
+    grid-column: 1 / -1;
+  }
+
+  .sim-home-link {
+    justify-self: start;
+  }
+
+  .sim-header .theme-toggle {
+    justify-self: end;
+    font-size: 13px;
+  }
+
+  main,
+  .container,
+  .layout,
+  main.container,
+  .sim-instructions,
+  .sim-footer {
+    width: min(100% - 18px, 1300px);
+  }
+
+  .row,
+  .cards,
+  .stats,
+  .grid-2,
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  canvas,
+  svg {
+    height: clamp(360px, 58vh, 560px);
+    min-height: 420px;
+  }
+
+  .canvas-wrap {
+    min-height: 420px;
+  }
+
+  #scene3d {
+    height: 480px;
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 420px) {
+  .sim-header {
+    grid-template-columns: 1fr;
+  }
+
+  .sim-title-group,
+  .sim-home-link,
+  .sim-header .theme-toggle {
+    grid-column: 1;
+    justify-self: start;
+  }
+}
